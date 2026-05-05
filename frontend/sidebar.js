@@ -11,8 +11,14 @@
 
     <div class="sidebar-hero">
       <p class="chat-heading-kicker">Daily Wellness Companion</p>
-      <h1 class="chat-heading-title">Atlas</h1>
+      <a class="sidebar-logo" href="/landing" aria-label="Atlas home">
+        <span class="sidebar-logo-text">Atlas</span>
+      </a>
       <p class="chat-heading-sub">Your wellness companion for better routines, lower stress, and sustainable healthy habits.</p>
+      <div id="sidebarStreakBadge" class="sidebar-streak-badge" hidden>
+        <span class="sidebar-streak-emoji" id="sidebarStreakEmoji">🔥</span>
+        <span id="sidebarStreakText">0 day streak</span>
+      </div>
     </div>
 
     <div class="sidebar-settings">
@@ -149,6 +155,69 @@
 
   var signOutBtn = document.getElementById('sidebarSignOut');
   if (signOutBtn) signOutBtn.addEventListener('click', signOut);
+
+  function getDateKey(dateValue) {
+    var d = new Date(dateValue);
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  }
+
+  function getStreakEmoji(streakDays) {
+    if (streakDays >= 30) return '🏆';
+    if (streakDays >= 14) return '🚀';
+    if (streakDays >= 7) return '🔥';
+    if (streakDays >= 3) return '✨';
+    if (streakDays >= 1) return '🌱';
+    return '🫧';
+  }
+
+  function calcConsecutiveStreak(series) {
+    if (!Array.isArray(series) || !series.length) return 0;
+    var checkedSet = new Set();
+    series.forEach(function(item) {
+      if (item && item.value !== null && item.value !== undefined) {
+        checkedSet.add(getDateKey(item.date));
+      }
+    });
+
+    var streak = 0;
+    var cursor = new Date();
+    cursor.setHours(0, 0, 0, 0);
+
+    while (checkedSet.has(getDateKey(cursor))) {
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+  }
+
+  function renderSidebarStreak(streakDays) {
+    var badge = document.getElementById('sidebarStreakBadge');
+    var emojiEl = document.getElementById('sidebarStreakEmoji');
+    var textEl = document.getElementById('sidebarStreakText');
+    if (!badge || !emojiEl || !textEl) return;
+    emojiEl.textContent = getStreakEmoji(streakDays);
+    textEl.textContent = streakDays === 1 ? '1 day streak' : streakDays + ' day streak';
+    badge.hidden = false;
+  }
+
+  function loadSidebarStreak() {
+    var token = localStorage.getItem('atlas_token');
+    if (!token) return;
+    fetch('/api/dashboard?days=30', {
+      headers: { Authorization: 'Bearer ' + token },
+    })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        if (!data || !data.series || !data.series.sleep) return;
+        var streakDays = calcConsecutiveStreak(data.series.sleep);
+        renderSidebarStreak(streakDays);
+      })
+      .catch(function() {});
+  }
+  loadSidebarStreak();
 
   // Load previous conversations (skip on chat page — app.js handles it there)
   var isChatPage = window.location.pathname === '/chat' || window.location.pathname.endsWith('/chat.html');

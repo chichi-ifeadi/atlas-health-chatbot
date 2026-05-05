@@ -631,6 +631,40 @@ body.with-global-nav .app-shell {
   font-family: 'Manrope', 'Segoe UI', sans-serif;
 }
 
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.sidebar-logo-text {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 2.15rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+.sidebar-streak-badge {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 244, 230, 0.9);
+  border: 1px solid rgba(198, 109, 69, 0.25);
+  color: #8f4e2b;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.sidebar-streak-emoji {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
 a.new-chat-btn {
   text-decoration: none;
 }
@@ -3137,7 +3171,9 @@ a.new-chat-btn {
 }
 
 .cal-cell.checked .cal-num {
-  color: rgba(117, 102, 88, 0.65);
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(198, 109, 69, 0.38);
 }
 
 .cal-cell.missed .cal-num {
@@ -3145,9 +3181,12 @@ a.new-chat-btn {
 }
 
 .cal-cell.today .cal-num {
-  background: var(--accent);
-  color: #fff;
-  box-shadow: 0 2px 10px rgba(198, 109, 69, 0.38);
+  outline: 2px solid rgba(198, 109, 69, 0.55);
+  outline-offset: 1px;
+}
+
+.cal-cell.today.checked .cal-num {
+  outline-color: rgba(159, 79, 47, 0.72);
 }
 
 .cal-cell.cal-pad {
