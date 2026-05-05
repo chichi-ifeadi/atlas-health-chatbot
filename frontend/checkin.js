@@ -1,5 +1,6 @@
 const TOKEN_KEY = 'atlas_token';
 const roleKey = 'atlas_user_role';
+const DAILY_LIMIT = 10;
 
 const els = {
   form: document.getElementById('checkinForm'),
@@ -12,6 +13,14 @@ const els = {
     { id: 'stress', label: 'stress', valueEl: document.getElementById('stressValue') },
     { id: 'hydration', label: 'hydration', valueEl: document.getElementById('hydrationValue') },
   ],
+};
+
+const descriptors = {
+  sleep: ['Poor', 'Poor', 'Poor', 'Poor', 'Okay', 'Okay', 'Okay', 'Great', 'Great', 'Great', 'Great'],
+  mood: ['Low', 'Low', 'Low', 'Low', 'Neutral', 'Neutral', 'Neutral', 'Positive', 'Positive', 'Positive', 'Positive'],
+  energy: ['Drained', 'Drained', 'Drained', 'Drained', 'Moderate', 'Moderate', 'Moderate', 'High', 'High', 'High', 'High'],
+  stress: ['Calm', 'Calm', 'Calm', 'Calm', 'Moderate', 'Moderate', 'Moderate', 'High', 'High', 'High', 'High'],
+  hydration: ['Dehydrated', 'Dehydrated', 'Dehydrated', 'Low', 'Decent', 'Decent', 'Decent', 'Well hydrated', 'Well hydrated', 'Well hydrated', 'Well hydrated'],
 };
 
 function requireToken() {
@@ -33,25 +42,50 @@ function setLoading(isLoading) {
   els.submitBtn.innerHTML = isLoading ? '<span class="spinner"></span>Submitting...' : 'Submit Check-in';
 }
 
-function attachSliderLabels() {
-  const descriptors = {
-    sleep: ['Poor', 'Poor', 'Poor', 'Poor', 'Okay', 'Okay', 'Okay', 'Great', 'Great', 'Great', 'Great'],
-    mood: ['Low', 'Low', 'Low', 'Low', 'Neutral', 'Neutral', 'Neutral', 'Positive', 'Positive', 'Positive', 'Positive'],
-    energy: ['Drained', 'Drained', 'Drained', 'Drained', 'Moderate', 'Moderate', 'Moderate', 'High', 'High', 'High', 'High'],
-    stress: ['Calm', 'Calm', 'Calm', 'Calm', 'Moderate', 'Moderate', 'Moderate', 'High', 'High', 'High', 'High'],
-    hydration: ['Dehydrated', 'Dehydrated', 'Dehydrated', 'Low', 'Decent', 'Decent', 'Decent', 'Well hydrated', 'Well hydrated', 'Well hydrated', 'Well hydrated'],
-  };
+function updateSliderLabel(id, value, valueEl) {
+  const descriptor = descriptors[id]?.[value] || '';
+  valueEl.textContent = `${value} / 10${descriptor ? ` — ${descriptor}` : ''}`;
+}
 
+function attachSliderLabels() {
   els.sliders.forEach(({ id, valueEl }) => {
     const input = document.getElementById(id);
-    const update = () => {
-      const numeric = Number(input.value);
-      const descriptor = descriptors[id]?.[numeric] || '';
-      valueEl.textContent = `${numeric} / 10${descriptor ? ` — ${descriptor}` : ''}`;
-    };
-    input.addEventListener('input', update);
-    update();
+    input.addEventListener('input', () => {
+      updateSliderLabel(id, Number(input.value), valueEl);
+    });
+    updateSliderLabel(id, Number(input.value), valueEl);
   });
+}
+
+function populateSliders(checkin) {
+  els.sliders.forEach(({ id, valueEl }) => {
+    const val = checkin[id];
+    if (val !== null && val !== undefined) {
+      const input = document.getElementById(id);
+      input.value = val;
+      updateSliderLabel(id, Number(val), valueEl);
+    }
+  });
+}
+
+function lockForm(message) {
+  els.sliders.forEach(({ id }) => {
+    document.getElementById(id).disabled = true;
+  });
+  els.submitBtn.disabled = true;
+  els.submitBtn.textContent = 'Daily limit reached';
+  setStatus(message || 'Daily check-in limit reached. Come back tomorrow!');
+}
+
+async function fetchTodayCheckin() {
+  const token = requireToken();
+  if (!token) return null;
+
+  const response = await fetch('/api/checkin/today', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) return null;
+  return response.json();
 }
 
 async function submitCheckin(payload) {
@@ -66,6 +100,7 @@ async function submitCheckin(payload) {
     },
     body: JSON.stringify(payload),
   });
+
   if (response.status === 401) {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(roleKey);
@@ -74,10 +109,9 @@ async function submitCheckin(payload) {
     window.location.href = '/signin';
     return;
   }
+
   const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || 'Check-in failed');
-  }
+  if (!response.ok) throw new Error(data.error || 'Check-in failed');
   return data;
 }
 
@@ -92,17 +126,38 @@ els.form.addEventListener('submit', async (e) => {
     energy: Number(document.getElementById('energy').value),
     stress: Number(document.getElementById('stress').value),
     hydration: Number(document.getElementById('hydration').value),
-    notes: document.getElementById('notes').value.trim() || null,
   };
 
   try {
-    await submitCheckin(payload);
-    setStatus('Check-in submitted. Thanks!');
+    const data = await submitCheckin(payload);
+    if (data?.checkin) populateSliders(data.checkin);
+    if ((data?.count || 1) >= DAILY_LIMIT) {
+      lockForm('Daily check-in limit reached. Come back tomorrow!');
+    } else {
+      setStatus('Check-in submitted. Thanks!');
+      setLoading(false);
+    }
   } catch (error) {
     setStatus(error.message, true);
-  } finally {
     setLoading(false);
   }
 });
 
-attachSliderLabels();
+async function init() {
+  attachSliderLabels();
+
+  try {
+    const data = await fetchTodayCheckin();
+    if (!data) return;
+
+    if (data.checkin) populateSliders(data.checkin);
+
+    if (data.count >= DAILY_LIMIT) {
+      lockForm('Daily check-in limit reached. Come back tomorrow!');
+    }
+  } catch {
+    // non-critical — page still works with defaults
+  }
+}
+
+init();

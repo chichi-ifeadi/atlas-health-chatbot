@@ -7,7 +7,8 @@
   <title>Daily Check-In - Atlas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Playfair+Display:wght@700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Playfair+Display:wght@700;800&display=swap"></noscript>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -70,11 +71,6 @@
               <input type="range" id="hydration" name="hydration" min="0" max="10" value="5" />
               <div class="slider-scale"><span>Low</span><span>Decent</span><span>Well hydrated</span></div>
             </div>
-
-            <label class="input-shell notes-shell" for="notes">
-              <span class="input-label">Notes (optional)</span>
-              <textarea id="notes" name="notes" placeholder="Anything you want Atlas to know? E.g. rough night, big presentation today, skipped lunch." rows="3"></textarea>
-            </label>
 
             <div class="checkin-actions">
               <button id="submitCheckin" class="primary-btn" type="submit">Submit check-in</button>
