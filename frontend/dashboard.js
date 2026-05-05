@@ -313,8 +313,71 @@ async function loadDashboard(days = 7) {
   els.hydrationAvg.textContent = hasData ? formatValue(data.averages.hydration) : '--';
   setDelta(els.hydrationDelta, hasData ? data.deltas.hydration : null);
   renderBars(els.hydrationBars, data.series.hydration || []);
+  renderCheckinCalendar(data.series.sleep || [], days);
   renderToday(els.todayList, data.todayScores || {});
   renderInsights(els.insightsList, data.insights || []);
+}
+
+function renderCheckinCalendar(series, days) {
+  const grid = document.getElementById('checkinCalendar');
+  const subEl = document.getElementById('checkinCalSub');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  if (!series || series.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'cal-no-data';
+    empty.textContent = 'No check-in data for this period.';
+    grid.appendChild(empty);
+    if (subEl) subEl.textContent = '';
+    return;
+  }
+
+  const checkedCount = series.filter((item) => item.value !== null && item.value !== undefined).length;
+  if (subEl) subEl.textContent = `${checkedCount} of ${series.length} days`;
+
+  const todayStr = new Date().toLocaleDateString('en-CA');
+
+  const firstDate = new Date(series[0].date);
+  const rawDay = firstDate.getDay();
+  const mondayOffset = rawDay === 0 ? 6 : rawDay - 1;
+
+  for (let i = 0; i < mondayOffset; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'cal-cell cal-pad';
+    empty.setAttribute('aria-hidden', 'true');
+    grid.appendChild(empty);
+  }
+
+  series.forEach((item) => {
+    const d = new Date(item.date);
+    const dateStr = d.toLocaleDateString('en-CA');
+    const isToday = dateStr === todayStr;
+    const checked = item.value !== null && item.value !== undefined;
+
+    const classes = ['cal-cell', checked ? 'checked' : 'missed'];
+    if (isToday) classes.push('today');
+
+    const cell = document.createElement('div');
+    cell.className = classes.join(' ');
+    cell.title = `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — ${checked ? 'Checked in ✓' : 'Missed'}`;
+    cell.setAttribute('role', 'img');
+    cell.setAttribute('aria-label', cell.title);
+
+    if (checked) {
+      const emoji = document.createElement('span');
+      emoji.className = 'cal-emoji';
+      emoji.textContent = '🔥';
+      cell.appendChild(emoji);
+    }
+
+    const num = document.createElement('span');
+    num.className = 'cal-num';
+    num.textContent = d.getDate();
+    cell.appendChild(num);
+
+    grid.appendChild(cell);
+  });
 }
 
 els.rangeButtons.forEach((button) => {
