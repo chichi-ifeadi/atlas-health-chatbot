@@ -3040,6 +3040,43 @@ a.new-chat-btn {
   color: rgba(117, 102, 88, 0.5);
 }
 
+.cal-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.checkin-cal-month {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(117, 102, 88, 0.6);
+  letter-spacing: 0.04em;
+  min-width: 80px;
+  text-align: center;
+}
+
+.cal-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: rgba(117, 102, 88, 0.55);
+  border-radius: 6px;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cal-nav-btn:hover {
+  background: rgba(117, 102, 88, 0.1);
+  color: rgba(117, 102, 88, 0.9);
+}
+
 .cal-weekday-row {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -3114,6 +3151,15 @@ a.new-chat-btn {
 }
 
 .cal-cell.cal-pad {
+  pointer-events: none;
+}
+
+.cal-cell.future .cal-num {
+  color: rgba(117, 102, 88, 0.25);
+}
+
+.cal-cell.future {
+  cursor: default;
   pointer-events: none;
 }
 

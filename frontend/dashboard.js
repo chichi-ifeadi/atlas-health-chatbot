@@ -268,11 +268,15 @@ function updateOverview(data) {
   return coverage.loggedDays;
 }
 
-async function fetchDashboard(days) {
+async function fetchDashboard(days, startDate, endDate) {
   const token = requireToken();
   if (!token) throw new Error('Not authenticated');
 
-  const response = await fetch(`/api/dashboard?days=${days}`, {
+  let url = `/api/dashboard?days=${days}`;
+  if (startDate) url += `&startDate=${startDate}`;
+  if (endDate) url += `&endDate=${endDate}`;
+
+  const response = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -291,8 +295,48 @@ async function fetchDashboard(days) {
   return data;
 }
 
+// Selected month/year for the calendar (defaults to current month)
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth(); // 0-indexed
+
+function getCalendarDateRange(days) {
+  const today = new Date();
+  const isCurrentMonth = calYear === today.getFullYear() && calMonth === today.getMonth();
+
+  if (days === 7) {
+    // Current (or last) week of selected month
+    const dow = (isCurrentMonth ? today : new Date(calYear, calMonth + 1, 0)).getDay();
+    const mondayOffset = dow === 0 ? 6 : dow - 1;
+    const refDay = isCurrentMonth ? today : new Date(calYear, calMonth + 1, 0);
+    const monday = new Date(refDay);
+    monday.setDate(refDay.getDate() - mondayOffset);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return { startDate: monday.toLocaleDateString('en-CA'), endDate: sunday.toLocaleDateString('en-CA'), days: 7 };
+  }
+
+  if (days === 14) {
+    const refDay = isCurrentMonth ? today : new Date(calYear, calMonth + 1, 0);
+    const dow = refDay.getDay();
+    const mondayOffset = dow === 0 ? 6 : dow - 1;
+    const thisMonday = new Date(refDay);
+    thisMonday.setDate(refDay.getDate() - mondayOffset);
+    const startMonday = new Date(thisMonday);
+    startMonday.setDate(thisMonday.getDate() - 7);
+    const endSunday = new Date(thisMonday);
+    endSunday.setDate(thisMonday.getDate() + 6);
+    return { startDate: startMonday.toLocaleDateString('en-CA'), endDate: endSunday.toLocaleDateString('en-CA'), days: 14 };
+  }
+
+  // 30-day: whole selected month
+  const firstOfMonth = new Date(calYear, calMonth, 1);
+  const lastOfMonth = new Date(calYear, calMonth + 1, 0);
+  return { startDate: firstOfMonth.toLocaleDateString('en-CA'), endDate: lastOfMonth.toLocaleDateString('en-CA'), days: lastOfMonth.getDate() };
+}
+
 async function loadDashboard(days = 7) {
-  const data = await fetchDashboard(days);
+  const { startDate, endDate, days: fetchDays } = getCalendarDateRange(days);
+  const data = await fetchDashboard(fetchDays, startDate, endDate);
   if (!data) return;
 
   const loggedDays = updateOverview(data);
@@ -321,46 +365,87 @@ async function loadDashboard(days = 7) {
 function renderCheckinCalendar(series, days) {
   const grid = document.getElementById('checkinCalendar');
   const subEl = document.getElementById('checkinCalSub');
+  const monthLabelEl = document.getElementById('checkinCalMonthLabel');
   if (!grid) return;
   grid.innerHTML = '';
 
-  if (!series || series.length === 0) {
+  // Build a lookup map of date string → series item
+  const dataMap = {};
+  (series || []).forEach((item) => { dataMap[item.date] = item; });
+
+  const today = new Date();
+  const todayStr = today.toLocaleDateString('en-CA');
+
+  // Build cells from the date range returned by getCalendarDateRange
+  const { startDate: rangeStart, endDate: rangeEnd } = getCalendarDateRange(days);
+  let cells = [];
+  for (let d = new Date(rangeStart); d.toLocaleDateString('en-CA') <= rangeEnd; d.setDate(d.getDate() + 1)) {
+    cells.push(new Date(d));
+  }
+
+  if (cells.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'cal-no-data';
     empty.textContent = 'No check-in data for this period.';
     grid.appendChild(empty);
     if (subEl) subEl.textContent = '';
+    if (monthLabelEl) monthLabelEl.textContent = '';
     return;
   }
 
-  const checkedCount = series.filter((item) => item.value !== null && item.value !== undefined).length;
-  if (subEl) subEl.textContent = `${checkedCount} of ${series.length} days`;
+  // Checked count (only past/today days)
+  const checkedCount = cells.filter((d) => {
+    const ds = d.toLocaleDateString('en-CA');
+    const item = dataMap[ds];
+    return item && item.value !== null && item.value !== undefined;
+  }).length;
+  const pastCount = cells.filter((d) => d.toLocaleDateString('en-CA') <= todayStr).length;
+  if (subEl) subEl.textContent = `${checkedCount} of ${pastCount} days`;
 
-  const todayStr = new Date().toLocaleDateString('en-CA');
-
-  const firstDate = new Date(series[0].date);
-  const rawDay = firstDate.getDay();
-  const mondayOffset = rawDay === 0 ? 6 : rawDay - 1;
-
-  for (let i = 0; i < mondayOffset; i++) {
-    const empty = document.createElement('div');
-    empty.className = 'cal-cell cal-pad';
-    empty.setAttribute('aria-hidden', 'true');
-    grid.appendChild(empty);
+  // Month/year label
+  if (monthLabelEl) {
+    const firstDate = cells[0];
+    const lastDate = cells[cells.length - 1];
+    const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    if (firstDate.getMonth() === lastDate.getMonth() && firstDate.getFullYear() === lastDate.getFullYear()) {
+      monthLabelEl.textContent = fmt(lastDate);
+    } else {
+      const startLabel = firstDate.toLocaleDateString('en-US', {
+        month: 'short',
+        ...(firstDate.getFullYear() !== lastDate.getFullYear() ? { year: 'numeric' } : {}),
+      });
+      monthLabelEl.textContent = `${startLabel} – ${fmt(lastDate)}`;
+    }
   }
 
-  series.forEach((item) => {
-    const d = new Date(item.date);
+  // Pad so the first cell falls on the correct weekday column
+  const rawDay = cells[0].getDay();
+  const mondayOffset = rawDay === 0 ? 6 : rawDay - 1;
+  for (let i = 0; i < mondayOffset; i++) {
+    const pad = document.createElement('div');
+    pad.className = 'cal-cell cal-pad';
+    pad.setAttribute('aria-hidden', 'true');
+    grid.appendChild(pad);
+  }
+
+  cells.forEach((d) => {
     const dateStr = d.toLocaleDateString('en-CA');
     const isToday = dateStr === todayStr;
-    const checked = item.value !== null && item.value !== undefined;
+    const isFuture = dateStr > todayStr;
+    const item = dataMap[dateStr];
+    const checked = !isFuture && item && item.value !== null && item.value !== undefined;
 
-    const classes = ['cal-cell', checked ? 'checked' : 'missed'];
+    const classes = ['cal-cell'];
+    if (isFuture) classes.push('future');
+    else if (checked) classes.push('checked');
+    else classes.push('missed');
     if (isToday) classes.push('today');
 
     const cell = document.createElement('div');
     cell.className = classes.join(' ');
-    cell.title = `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — ${checked ? 'Checked in ✓' : 'Missed'}`;
+    cell.title = isFuture
+      ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      : `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — ${checked ? 'Checked in ✓' : 'Missed'}`;
     cell.setAttribute('role', 'img');
     cell.setAttribute('aria-label', cell.title);
 
@@ -387,6 +472,21 @@ els.rangeButtons.forEach((button) => {
     loadDashboard(Number(button.dataset.days));
   });
 });
+
+function getActiveDays() {
+  const active = document.querySelector('.range-btn.active');
+  return active ? Number(active.dataset.days) : 7;
+}
+
+function navigateCalMonth(direction) {
+  calMonth += direction;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  loadDashboard(getActiveDays());
+}
+
+document.getElementById('calPrevMonth')?.addEventListener('click', () => navigateCalMonth(-1));
+document.getElementById('calNextMonth')?.addEventListener('click', () => navigateCalMonth(1));
 
 if (requireToken()) {
   setIdentity();

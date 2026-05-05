@@ -2193,7 +2193,9 @@ async function handleCheckin(req, res) {
 async function handleDashboard(req, res) {
   try {
     const userId = req.user.userId;
-    const days = Math.min(Math.max(parseInt(req.query.days, 10) || 7, 7), 30);
+    const days = Math.min(Math.max(parseInt(req.query.days, 10) || 7, 7), 31);
+    const rangeEnd = req.query.endDate ? new Date(req.query.endDate) : new Date();
+    const rangeStartParam = req.query.startDate ? new Date(req.query.startDate) : null;
 
     const ipKey = `dash:ip:${req.ip}`;
     const userKey = `dash:user:${userId}`;
@@ -2208,13 +2210,13 @@ async function handleDashboard(req, res) {
       return res.status(429).json({ error: 'Too many requests, slow down.' });
     }
 
-    const rangeStart = subtractDays(new Date(), days - 1);
+    const rangeStart = rangeStartParam || subtractDays(rangeEnd, days - 1);
     const prevRangeStart = subtractDays(rangeStart, days);
     const prevRangeEnd = subtractDays(rangeStart, 1);
 
     const fetchRange = (from, to) => getCheckinsInRange(userId, from.toISOString(), to.toISOString());
 
-    const currentRows = await fetchRange(rangeStart, new Date());
+    const currentRows = await fetchRange(rangeStart, rangeEnd);
     const prevRows = await fetchRange(prevRangeStart, prevRangeEnd);
 
     const metrics = ['sleep', 'mood', 'energy', 'stress', 'hydration'];
@@ -2239,7 +2241,7 @@ async function handleDashboard(req, res) {
 
     const daysList = [];
     for (let i = days - 1; i >= 0; i -= 1) {
-      daysList.push(startOfDay(subtractDays(new Date(), i)));
+      daysList.push(startOfDay(subtractDays(rangeEnd, i)));
     }
 
     daysList.forEach((d) => {
