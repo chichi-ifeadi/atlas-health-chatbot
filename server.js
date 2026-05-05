@@ -563,6 +563,36 @@ function subtractDays(date, days) {
   return d;
 }
 
+function parseDateOnlyInput(value) {
+  if (typeof value !== 'string') return null;
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  return new Date(year, month, day);
+}
+
+function endOfDay(date) {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function buildDayListInclusive(rangeStart, rangeEnd) {
+  const days = [];
+  for (let d = startOfDay(rangeStart); d <= rangeEnd; d = addDays(d, 1)) {
+    days.push(startOfDay(d));
+  }
+  return days;
+}
+
+function addDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
 function cloneData(value) {
   if (value === null || value === undefined) return value;
   return JSON.parse(JSON.stringify(value));
@@ -2194,8 +2224,18 @@ async function handleDashboard(req, res) {
   try {
     const userId = req.user.userId;
     const days = Math.min(Math.max(parseInt(req.query.days, 10) || 7, 7), 31);
-    const rangeEnd = req.query.endDate ? new Date(req.query.endDate) : new Date();
-    const rangeStartParam = req.query.startDate ? new Date(req.query.startDate) : null;
+    const parsedEndDateOnly = parseDateOnlyInput(req.query.endDate);
+    const parsedStartDateOnly = parseDateOnlyInput(req.query.startDate);
+    const rangeEnd = parsedEndDateOnly
+      ? endOfDay(parsedEndDateOnly)
+      : req.query.endDate
+        ? new Date(req.query.endDate)
+        : new Date();
+    const rangeStartParam = parsedStartDateOnly
+      ? startOfDay(parsedStartDateOnly)
+      : req.query.startDate
+        ? new Date(req.query.startDate)
+        : null;
 
     const ipKey = `dash:ip:${req.ip}`;
     const userKey = `dash:user:${userId}`;
@@ -2210,7 +2250,7 @@ async function handleDashboard(req, res) {
       return res.status(429).json({ error: 'Too many requests, slow down.' });
     }
 
-    const rangeStart = rangeStartParam || subtractDays(rangeEnd, days - 1);
+    const rangeStart = rangeStartParam || startOfDay(subtractDays(rangeEnd, days - 1));
     const prevRangeStart = subtractDays(rangeStart, days);
     const prevRangeEnd = subtractDays(rangeStart, 1);
 
@@ -2220,33 +2260,46 @@ async function handleDashboard(req, res) {
     const prevRows = await fetchRange(prevRangeStart, prevRangeEnd);
 
     const metrics = ['sleep', 'mood', 'energy', 'stress', 'hydration'];
-    const avg = (rows, key) =>
-      rows.length ? rows.reduce((s, r) => s + (Number(r[key]) || 0), 0) / rows.length : 0;
 
-    const currentAvg = Object.fromEntries(metrics.map((m) => [m, avg(currentRows, m)]));
-    const prevAvg = Object.fromEntries(metrics.map((m) => [m, avg(prevRows, m)]));
+    const buildDailyMap = (rows) => {
+      const map = {};
+      rows.forEach((row) => {
+        const key = startOfDay(row.created_at).toISOString();
+        map[key] = map[key] || { count: 0 };
+        metrics.forEach((m) => {
+          map[key][m] = (map[key][m] || 0) + (Number(row[m]) || 0);
+        });
+        map[key].count += 1;
+      });
+      return map;
+    };
+
+    // Use selected-period averaging for all ranges:
+    // 1) average multiple check-ins within each day
+    // 2) average across every day in the selected window (missing days count as 0)
+    const avgFromWindow = (dailyMap, dayList, metric) => {
+      if (!dayList.length) return 0;
+      const total = dayList.reduce((sum, day) => {
+        const entry = dailyMap[day.toISOString()];
+        if (!entry || entry.count <= 0) return sum;
+        return sum + entry[metric] / entry.count;
+      }, 0);
+      return total / dayList.length;
+    };
+
+    const currentByDay = buildDailyMap(currentRows);
+    const prevByDay = buildDailyMap(prevRows);
+    const currentDayList = buildDayListInclusive(rangeStart, rangeEnd);
+    const prevDayList = buildDayListInclusive(prevRangeStart, prevRangeEnd);
+    const currentAvg = Object.fromEntries(metrics.map((m) => [m, avgFromWindow(currentByDay, currentDayList, m)]));
+    const prevAvg = Object.fromEntries(metrics.map((m) => [m, avgFromWindow(prevByDay, prevDayList, m)]));
 
     const seriesMap = {};
     metrics.forEach((m) => (seriesMap[m] = []));
 
-    const byDay = {};
-    currentRows.forEach((row) => {
-      const key = startOfDay(row.created_at).toISOString();
-      byDay[key] = byDay[key] || { count: 0 };
-      metrics.forEach((m) => {
-        byDay[key][m] = (byDay[key][m] || 0) + (Number(row[m]) || 0);
-      });
-      byDay[key].count += 1;
-    });
-
-    const daysList = [];
-    for (let i = days - 1; i >= 0; i -= 1) {
-      daysList.push(startOfDay(subtractDays(rangeEnd, i)));
-    }
-
-    daysList.forEach((d) => {
+    currentDayList.forEach((d) => {
       const key = d.toISOString();
-      const entry = byDay[key];
+      const entry = currentByDay[key];
       metrics.forEach((m) => {
         const val = entry ? entry[m] / entry.count : null;
         seriesMap[m].push({ date: d.toISOString(), value: val });

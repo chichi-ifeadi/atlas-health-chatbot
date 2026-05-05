@@ -69,7 +69,7 @@ function setText(el, value) {
   if (el) el.textContent = value;
 }
 
-function setDelta(el, value) {
+function setDelta(el, value, days = 7) {
   if (!el) return;
   if (!Number.isFinite(value)) {
     el.textContent = '--';
@@ -79,7 +79,7 @@ function setDelta(el, value) {
 
   const sign = value >= 0 ? '↑' : '↓';
   const amount = `${value >= 0 ? '+' : '-'}${Math.abs(value).toFixed(1)}`;
-  el.textContent = `${sign} ${amount} vs last week`;
+  el.textContent = `${sign} ${amount} vs previous ${days} days`;
   el.className = value >= 0 ? 'delta up' : 'delta down';
 }
 
@@ -100,11 +100,6 @@ function renderBars(el, series) {
       Number.isFinite(item.value) ? item.value.toFixed(1) : '--'
     }`;
     col.appendChild(bar);
-
-    const label = document.createElement('span');
-    label.className = 'mini-bar__label';
-    label.textContent = new Date(item.date).toLocaleDateString('en-US', { weekday: 'short' });
-    col.appendChild(label);
 
     el.appendChild(col);
   });
@@ -298,66 +293,124 @@ async function fetchDashboard(days, startDate, endDate) {
 // Selected month/year for the calendar (defaults to current month)
 let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth(); // 0-indexed
+let weekAnchorDate = getStartOfWeek(new Date());
+let twoWeekAnchorDate = getStartOfWeek(new Date());
 
-function getCalendarDateRange(days) {
-  const today = new Date();
-  const isCurrentMonth = calYear === today.getFullYear() && calMonth === today.getMonth();
+function getStartOfWeek(date) {
+  const base = new Date(date);
+  const dow = base.getDay();
+  const mondayOffset = dow === 0 ? 6 : dow - 1;
+  base.setHours(0, 0, 0, 0);
+  base.setDate(base.getDate() - mondayOffset);
+  return base;
+}
 
+function addDays(date, days) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+function toDateKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function getRangeFromBounds(bounds) {
+  return {
+    startDate: toDateKey(bounds.startDate),
+    endDate: toDateKey(bounds.endDate),
+    days: bounds.days,
+  };
+}
+
+function getCalendarDateBounds(days) {
   if (days === 7) {
-    // Current (or last) week of selected month
-    const dow = (isCurrentMonth ? today : new Date(calYear, calMonth + 1, 0)).getDay();
-    const mondayOffset = dow === 0 ? 6 : dow - 1;
-    const refDay = isCurrentMonth ? today : new Date(calYear, calMonth + 1, 0);
-    const monday = new Date(refDay);
-    monday.setDate(refDay.getDate() - mondayOffset);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    return { startDate: monday.toLocaleDateString('en-CA'), endDate: sunday.toLocaleDateString('en-CA'), days: 7 };
+    const monday = new Date(weekAnchorDate);
+    const sunday = addDays(monday, 6);
+    return {
+      startDate: monday,
+      endDate: sunday,
+      days: 7,
+    };
   }
 
   if (days === 14) {
-    const refDay = isCurrentMonth ? today : new Date(calYear, calMonth + 1, 0);
-    const dow = refDay.getDay();
-    const mondayOffset = dow === 0 ? 6 : dow - 1;
-    const thisMonday = new Date(refDay);
-    thisMonday.setDate(refDay.getDate() - mondayOffset);
-    const startMonday = new Date(thisMonday);
-    startMonday.setDate(thisMonday.getDate() - 7);
-    const endSunday = new Date(thisMonday);
-    endSunday.setDate(thisMonday.getDate() + 6);
-    return { startDate: startMonday.toLocaleDateString('en-CA'), endDate: endSunday.toLocaleDateString('en-CA'), days: 14 };
+    // Previous week + running/current week (14-day window)
+    const startMonday = addDays(twoWeekAnchorDate, -7);
+    const endSunday = addDays(twoWeekAnchorDate, 6);
+    return {
+      startDate: startMonday,
+      endDate: endSunday,
+      days: 14,
+    };
   }
 
   // 30-day: whole selected month
   const firstOfMonth = new Date(calYear, calMonth, 1);
   const lastOfMonth = new Date(calYear, calMonth + 1, 0);
-  return { startDate: firstOfMonth.toLocaleDateString('en-CA'), endDate: lastOfMonth.toLocaleDateString('en-CA'), days: lastOfMonth.getDate() };
+  return { startDate: firstOfMonth, endDate: lastOfMonth, days: lastOfMonth.getDate() };
+}
+
+function getMetricsDateBounds(days) {
+  if (days === 30) {
+    // Keep metrics on an exact 30-day window.
+    const today = new Date();
+    const isCurrentMonth = calYear === today.getFullYear() && calMonth === today.getMonth();
+    const endDate = isCurrentMonth ? today : new Date(calYear, calMonth + 1, 0);
+    const startDate = addDays(endDate, -29);
+    return { startDate, endDate, days: 30 };
+  }
+
+  return getCalendarDateBounds(days);
+}
+
+function getCalendarDateRange(days) {
+  return getRangeFromBounds(getCalendarDateBounds(days));
+}
+
+function getMetricsDateRange(days) {
+  return getRangeFromBounds(getMetricsDateBounds(days));
 }
 
 async function loadDashboard(days = 7) {
-  const { startDate, endDate, days: fetchDays } = getCalendarDateRange(days);
-  const data = await fetchDashboard(fetchDays, startDate, endDate);
+  const metricRange = getMetricsDateRange(days);
+  const calendarRange = getCalendarDateRange(days);
+
+  const data = await fetchDashboard(metricRange.days, metricRange.startDate, metricRange.endDate);
   if (!data) return;
+
+  const needsCalendarFetch =
+    metricRange.startDate !== calendarRange.startDate ||
+    metricRange.endDate !== calendarRange.endDate ||
+    metricRange.days !== calendarRange.days;
+
+  const calendarData = needsCalendarFetch
+    ? await fetchDashboard(calendarRange.days, calendarRange.startDate, calendarRange.endDate)
+    : data;
+  if (!calendarData) return;
 
   const loggedDays = updateOverview(data);
   const hasData = loggedDays > 0;
 
   els.sleepAvg.textContent = hasData ? formatValue(data.averages.sleep) : '--';
   els.moodAvg.textContent = hasData ? formatValue(data.averages.mood) : '--';
-  setDelta(els.sleepDelta, hasData ? data.deltas.sleep : null);
-  setDelta(els.moodDelta, hasData ? data.deltas.mood : null);
+  setDelta(els.sleepDelta, hasData ? data.deltas.sleep : null, days);
+  setDelta(els.moodDelta, hasData ? data.deltas.mood : null, days);
   renderBars(els.sleepBars, data.series.sleep || []);
   renderBars(els.moodBars, data.series.mood || []);
   els.energyAvg.textContent = hasData ? formatValue(data.averages.energy) : '--';
-  setDelta(els.energyDelta, hasData ? data.deltas.energy : null);
+  setDelta(els.energyDelta, hasData ? data.deltas.energy : null, days);
   renderBars(els.energyBars, data.series.energy || []);
   els.stressAvg.textContent = hasData ? formatValue(data.averages.stress) : '--';
-  setDelta(els.stressDelta, hasData ? -data.deltas.stress : null);
+  setDelta(els.stressDelta, hasData ? -data.deltas.stress : null, days);
   renderBars(els.stressBars, data.series.stress || []);
   els.hydrationAvg.textContent = hasData ? formatValue(data.averages.hydration) : '--';
-  setDelta(els.hydrationDelta, hasData ? data.deltas.hydration : null);
+  setDelta(els.hydrationDelta, hasData ? data.deltas.hydration : null, days);
   renderBars(els.hydrationBars, data.series.hydration || []);
-  renderCheckinCalendar(data.series.sleep || [], days);
+  renderCheckinCalendar(calendarData.series.sleep || [], days);
   renderToday(els.todayList, data.todayScores || {});
   renderInsights(els.insightsList, data.insights || []);
 }
@@ -374,12 +427,11 @@ function renderCheckinCalendar(series, days) {
   (series || []).forEach((item) => { dataMap[item.date] = item; });
 
   const today = new Date();
-  const todayStr = today.toLocaleDateString('en-CA');
+  const todayStr = toDateKey(today);
 
-  // Build cells from the date range returned by getCalendarDateRange
-  const { startDate: rangeStart, endDate: rangeEnd } = getCalendarDateRange(days);
-  let cells = [];
-  for (let d = new Date(rangeStart); d.toLocaleDateString('en-CA') <= rangeEnd; d.setDate(d.getDate() + 1)) {
+  const { startDate: rangeStart, endDate: rangeEnd } = getCalendarDateBounds(days);
+  const cells = [];
+  for (let d = new Date(rangeStart); d <= rangeEnd; d.setDate(d.getDate() + 1)) {
     cells.push(new Date(d));
   }
 
@@ -393,43 +445,52 @@ function renderCheckinCalendar(series, days) {
     return;
   }
 
-  // Checked count (only past/today days)
   const checkedCount = cells.filter((d) => {
-    const ds = d.toLocaleDateString('en-CA');
+    const ds = toDateKey(d);
     const item = dataMap[ds];
-    return item && item.value !== null && item.value !== undefined;
+    return ds <= todayStr && item && item.value !== null && item.value !== undefined;
   }).length;
-  const pastCount = cells.filter((d) => d.toLocaleDateString('en-CA') <= todayStr).length;
-  if (subEl) subEl.textContent = `${checkedCount} of ${pastCount} days`;
+  const trackableDays = cells.filter((d) => toDateKey(d) <= todayStr).length;
+  if (subEl) subEl.textContent = `${checkedCount} of ${trackableDays} days`;
 
   // Month/year label
   if (monthLabelEl) {
-    const firstDate = cells[0];
-    const lastDate = cells[cells.length - 1];
-    const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    if (firstDate.getMonth() === lastDate.getMonth() && firstDate.getFullYear() === lastDate.getFullYear()) {
-      monthLabelEl.textContent = fmt(lastDate);
+    if (days === 7 || days === 14) {
+      const firstDate = cells[0];
+      const lastDate = cells[cells.length - 1];
+      const firstMonth = firstDate.toLocaleDateString('en-US', { month: 'long' });
+      const lastMonth = lastDate.toLocaleDateString('en-US', { month: 'long' });
+
+      if (firstDate.getMonth() === lastDate.getMonth() && firstDate.getFullYear() === lastDate.getFullYear()) {
+        monthLabelEl.textContent = `${firstMonth} ${lastDate.getFullYear()}`;
+      } else if (firstDate.getFullYear() === lastDate.getFullYear()) {
+        monthLabelEl.textContent = `${firstMonth}-${lastMonth} ${lastDate.getFullYear()}`;
+      } else {
+        monthLabelEl.textContent = `${firstMonth} ${firstDate.getFullYear()}-${lastMonth} ${lastDate.getFullYear()}`;
+      }
     } else {
-      const startLabel = firstDate.toLocaleDateString('en-US', {
-        month: 'short',
-        ...(firstDate.getFullYear() !== lastDate.getFullYear() ? { year: 'numeric' } : {}),
+      const selectedMonthDate = new Date(calYear, calMonth, 1);
+      monthLabelEl.textContent = selectedMonthDate.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
       });
-      monthLabelEl.textContent = `${startLabel} – ${fmt(lastDate)}`;
     }
   }
 
-  // Pad so the first cell falls on the correct weekday column
-  const rawDay = cells[0].getDay();
-  const mondayOffset = rawDay === 0 ? 6 : rawDay - 1;
-  for (let i = 0; i < mondayOffset; i++) {
-    const pad = document.createElement('div');
-    pad.className = 'cal-cell cal-pad';
-    pad.setAttribute('aria-hidden', 'true');
-    grid.appendChild(pad);
+  // Keep 14-day view to exactly 14 visible day cells (no leading pads).
+  if (days !== 14) {
+    const rawDay = cells[0].getDay();
+    const mondayOffset = rawDay === 0 ? 6 : rawDay - 1;
+    for (let i = 0; i < mondayOffset; i++) {
+      const pad = document.createElement('div');
+      pad.className = 'cal-cell cal-pad';
+      pad.setAttribute('aria-hidden', 'true');
+      grid.appendChild(pad);
+    }
   }
 
   cells.forEach((d) => {
-    const dateStr = d.toLocaleDateString('en-CA');
+    const dateStr = toDateKey(d);
     const isToday = dateStr === todayStr;
     const isFuture = dateStr > todayStr;
     const item = dataMap[dateStr];
@@ -449,13 +510,6 @@ function renderCheckinCalendar(series, days) {
     cell.setAttribute('role', 'img');
     cell.setAttribute('aria-label', cell.title);
 
-    if (checked) {
-      const emoji = document.createElement('span');
-      emoji.className = 'cal-emoji';
-      emoji.textContent = '🔥';
-      cell.appendChild(emoji);
-    }
-
     const num = document.createElement('span');
     num.className = 'cal-num';
     num.textContent = d.getDate();
@@ -469,7 +523,17 @@ els.rangeButtons.forEach((button) => {
   button.addEventListener('click', () => {
     els.rangeButtons.forEach((item) => item.classList.remove('active'));
     button.classList.add('active');
-    loadDashboard(Number(button.dataset.days));
+    const days = Number(button.dataset.days);
+    if (days === 7) {
+      weekAnchorDate = getStartOfWeek(new Date());
+    } else if (days === 14) {
+      twoWeekAnchorDate = getStartOfWeek(new Date());
+    } else if (days === 30) {
+      const today = new Date();
+      calYear = today.getFullYear();
+      calMonth = today.getMonth();
+    }
+    loadDashboard(days);
   });
 });
 
@@ -478,15 +542,26 @@ function getActiveDays() {
   return active ? Number(active.dataset.days) : 7;
 }
 
-function navigateCalMonth(direction) {
-  calMonth += direction;
-  if (calMonth > 11) { calMonth = 0; calYear++; }
-  if (calMonth < 0) { calMonth = 11; calYear--; }
+function navigateCalendar(direction) {
+  const activeDays = getActiveDays();
+  if (activeDays === 7) {
+    weekAnchorDate = addDays(weekAnchorDate, direction * 7);
+    calYear = weekAnchorDate.getFullYear();
+    calMonth = weekAnchorDate.getMonth();
+  } else if (activeDays === 14) {
+    twoWeekAnchorDate = addDays(twoWeekAnchorDate, direction * 14);
+    calYear = twoWeekAnchorDate.getFullYear();
+    calMonth = twoWeekAnchorDate.getMonth();
+  } else {
+    calMonth += direction;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    if (calMonth < 0) { calMonth = 11; calYear--; }
+  }
   loadDashboard(getActiveDays());
 }
 
-document.getElementById('calPrevMonth')?.addEventListener('click', () => navigateCalMonth(-1));
-document.getElementById('calNextMonth')?.addEventListener('click', () => navigateCalMonth(1));
+document.getElementById('calPrevMonth')?.addEventListener('click', () => navigateCalendar(-1));
+document.getElementById('calNextMonth')?.addEventListener('click', () => navigateCalendar(1));
 
 if (requireToken()) {
   setIdentity();
