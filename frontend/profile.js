@@ -6,7 +6,6 @@ const els = {
   profileDisplayName: document.getElementById('profileDisplayName'),
   profileDisplayEmail: document.getElementById('profileDisplayEmail'),
   profileAvatarInitial: document.getElementById('profileAvatarInitial'),
-  profileStreakBadge: document.getElementById('profileStreakBadge'),
   nameForm: document.getElementById('nameForm'),
   nameInput: document.getElementById('nameInput'),
   nameStatus: document.getElementById('nameStatus'),
@@ -60,30 +59,6 @@ function getTimezoneOptions() {
     }
   }
   return ['UTC'];
-}
-
-function calculateRecentStreak(series = []) {
-  let streak = 0;
-
-  for (let index = series.length - 1; index >= 0; index -= 1) {
-    if (!Number.isFinite(series[index]?.value)) {
-      break;
-    }
-    streak += 1;
-  }
-
-  return streak;
-}
-
-function updateStreakBadge(streak) {
-  if (!els.profileStreakBadge) return;
-
-  if (streak > 0) {
-    els.profileStreakBadge.textContent = `🔥 ${streak}-day streak`;
-    return;
-  }
-
-  els.profileStreakBadge.textContent = '🔥 Start your streak';
 }
 
 function populateTimezoneSelect(selectedValue) {
@@ -252,13 +227,6 @@ async function loadProfile() {
       els.profileSubtitle.textContent = `Signed in as ${user.email || user.userId || ''}`;
     }
 
-    try {
-      const dashboard = await requestJson('/api/dashboard?days=30', { headers: { 'Content-Type': 'application/json' } });
-      updateStreakBadge(calculateRecentStreak(dashboard.series?.sleep || []));
-    } catch {
-      updateStreakBadge(0);
-    }
-
     return user;
   } catch {
     window.location.href = '/signin';
@@ -297,9 +265,12 @@ if (els.emailForm) els.emailForm.addEventListener('submit', async (e) => {
       method: 'POST',
       body: JSON.stringify({ email: els.newEmail.value.trim() || undefined }),
     });
+    const newEmail = els.newEmail.value.trim();
     setStatus(els.emailStatus, 'Email updated');
-    await loadProfile();
+    localStorage.setItem('atlas_user_email', newEmail);
+    if (els.currentEmail) els.currentEmail.value = newEmail;
     els.newEmail.value = '';
+    await loadProfile();
   } catch (error) {
     setStatus(els.emailStatus, error.message, true);
   }
@@ -383,6 +354,32 @@ els.logoutAllBtn.addEventListener('click', async () => {
   }
 });
 
+const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+if (deleteAccountBtn) {
+  deleteAccountBtn.addEventListener('click', async () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to delete your account? This will permanently remove all your data and cannot be undone.'
+    );
+    if (!confirmed) return;
+
+    deleteAccountBtn.disabled = true;
+    deleteAccountBtn.textContent = 'Deleting...';
+    setStatus(els.logoutAllStatus, '');
+
+    try {
+      await requestJson('/api/auth/account', { method: 'DELETE' });
+      ['atlas_token', 'atlas_user_email', 'atlas_user_role', 'atlas_user_id', 'atlas_user_name',
+        'atlas_onboarding_complete', 'atlas_sidebar_collapsed', 'atlas_sidebar_width']
+        .forEach((k) => localStorage.removeItem(k));
+      window.location.href = '/signin';
+    } catch (error) {
+      setStatus(els.logoutAllStatus, error.message, true);
+      deleteAccountBtn.disabled = false;
+      deleteAccountBtn.textContent = 'Delete Account';
+    }
+  });
+}
+
 if (els.logoutBtn) {
   els.logoutBtn.addEventListener('click', () => {
     localStorage.removeItem(tokenKey);
@@ -456,5 +453,25 @@ if (els.sendTestEmailBtn) {
 }
 
 applyValidationMessages();
+
+// Decode email from the JWT payload immediately — synchronous, no API call needed
+function getEmailFromToken() {
+  try {
+    const token = localStorage.getItem('atlas_token');
+    if (!token) return '';
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.email || '';
+  } catch {
+    return '';
+  }
+}
+
+if (els.currentEmail) {
+  els.currentEmail.value =
+    getEmailFromToken() ||
+    localStorage.getItem('atlas_user_email') ||
+    '';
+}
+
 loadProfile();
 loadNotifications();

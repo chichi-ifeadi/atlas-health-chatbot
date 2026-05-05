@@ -11,6 +11,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const path = require('path');
+const compression = require('compression');
 const { buildListenFailureResult, probeAtlasHealth } = require('./startup-utils');
 const rateLimitStore = new Map();
 
@@ -47,8 +48,8 @@ const APP_CONFIG = Object.freeze({
   rateLimitChatIp: 90,
   rateLimitChatUser: 60,
   guestPrefix: 'guest-',
-  rateLimitCheckinUser: 6,
-  rateLimitCheckinIp: 12,
+  rateLimitCheckinUser: 10,
+  rateLimitCheckinIp: 20,
   rateLimitDashboardIp: 30,
   rateLimitDashboardUser: 30,
   rateLimitNotifyUser: 30,
@@ -321,6 +322,7 @@ if (!supabase) {
   console.warn('Supabase not configured. Using in-memory storage until persistence is enabled.');
 }
 
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 
@@ -368,7 +370,7 @@ Object.entries(FRONTEND_PAGES).forEach(([route, pageFile]) => {
 });
 
 app.get('/.well-known/appspecific/com.chrome.devtools.json', (_req, res) => res.json({}));
-app.use(express.static(FRONTEND_DIR, { index: false }));
+app.use(express.static(FRONTEND_DIR, { index: false, maxAge: '7d', immutable: true }));
 app.use('/api', authenticateRequest);
 const resend = new Resend(APP_CONFIG.resendApiKey);
 
@@ -2087,6 +2089,38 @@ async function handleProfileUpdate(req, res) {
   }
 }
 
+async function handleDeleteAccount(req, res) {
+  try {
+    const userId = req.user.userId;
+    const user = await findUserById(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    await withPersistence(
+      'deleteUserSettings',
+      async () => {
+        await supabase.from('settings').delete().like('key', `notifications_${userId}`);
+        await supabase.from('settings').delete().like('key', `notification_state_${userId}_%`);
+        const { error } = await supabase.from('users').delete().eq('id', userId);
+        if (error) throw error;
+      },
+      () => {
+        memoryStore.settings.forEach((_, key) => {
+          if (key === `notifications_${userId}` || key.startsWith(`notification_state_${userId}_`)) {
+            memoryStore.settings.delete(key);
+          }
+        });
+        const idx = memoryStore.users.get(userId);
+        if (idx !== undefined) memoryStore.users.delete(userId);
+      }
+    );
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Error in DELETE /api/auth/account:', error);
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+}
+
 async function handleLogoutAll(req, res) {
   try {
     const user = await findUserById(req.user.userId);
@@ -2178,6 +2212,20 @@ async function handleGuestLogin(_req, res) {
   }
 }
 
+async function handleCheckinToday(req, res) {
+  try {
+    const userId = req.user.userId;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const rows = await getCheckinsInRange(userId, today.toISOString(), new Date().toISOString());
+    const latest = rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0] || null;
+    return res.json({ checkin: latest, count: rows.length });
+  } catch (error) {
+    console.error('Error in GET /api/checkin/today:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 async function handleCheckin(req, res) {
   try {
     const userId = req.user.userId;
@@ -2207,13 +2255,13 @@ async function handleCheckin(req, res) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const count = await countCheckinsSince(userId, today.toISOString());
-    if (count >= 3) {
-      return res.status(429).json({ error: 'Daily check-in limit reached (3 per day).' });
+    if (count >= 10) {
+      return res.status(429).json({ error: 'Daily check-in limit reached (10 per day).' });
     }
 
-    await createCheckin(payload);
+    const saved = await createCheckin(payload);
 
-    return res.json({ success: true });
+    return res.json({ success: true, checkin: saved, count: count + 1 });
   } catch (error) {
     console.error('Error in /api/checkin:', error);
     return res.status(500).json({ error: 'Internal server error', details: error.message });
@@ -2311,13 +2359,15 @@ async function handleDashboard(req, res) {
     metrics.forEach((m) => (todayScores[m] = latest ? Number(latest[m]) || 0 : null));
 
     const insights = [];
-    metrics.forEach((m) => {
-      const delta = currentAvg[m] - prevAvg[m];
-      if (delta > 0.5) insights.push({ title: `${m} improving`, body: `${m} scores are trending up vs last period.` });
-      if (delta < -0.5) insights.push({ title: `${m} dipping`, body: `${m} scores dipped vs last period; consider small adjustments.` });
-    });
-    if (insights.length === 0) {
-      insights.push({ title: 'Keep the streak', body: 'Consistent check-ins help Atlas personalize guidance.' });
+    if (currentRows.length > 0) {
+      metrics.forEach((m) => {
+        const delta = currentAvg[m] - prevAvg[m];
+        if (delta > 0.5) insights.push({ title: `${m} improving`, body: `${m} scores are trending up vs last period.` });
+        if (delta < -0.5) insights.push({ title: `${m} dipping`, body: `${m} scores dipped vs last period; consider small adjustments.` });
+      });
+      if (insights.length === 0) {
+        insights.push({ title: 'Keep the streak', body: 'Consistent check-ins help Atlas personalize guidance.' });
+      }
     }
 
     return res.json({
@@ -2612,10 +2662,12 @@ app.post('/api/auth/login', handleLogin);
 app.get('/api/auth/me', requireAuth, handleMe);
 app.post('/api/auth/profile', requireAuth, handleProfileUpdate);
 app.post('/api/auth/logout-all', requireAuth, handleLogoutAll);
+app.delete('/api/auth/account', requireAuth, handleDeleteAccount);
 app.post('/api/auth/request-reset', handleRequestReset);
 app.post('/api/auth/reset', handleResetPassword);
 app.post('/api/auth/guest', handleGuestLogin);
 app.post('/api/auth/onboarding-complete', requireAuth, handleOnboardingComplete);
+app.get('/api/checkin/today', requireAuth, handleCheckinToday);
 app.post('/api/checkin', requireAuth, handleCheckin);
 app.get('/api/dashboard', requireAuth, handleDashboard);
 app.get('/api/notifications', requireAuth, handleNotificationsGet);

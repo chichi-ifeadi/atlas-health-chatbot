@@ -7,7 +7,8 @@
   <title>Atlas — Your Personal Wellness Companion</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Lora:wght@400;500;600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Lora:wght@400;500;600&display=swap"></noscript>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -713,7 +714,7 @@
       <span class="nav-logo-text">Atlas</span>
     </a>
     <div class="nav-actions">
-      <a class="btn-ghost" href="/signin">Sign in</a>
+      <a class="btn-ghost" id="navAuthBtn" href="/signin">Sign in</a>
     </div>
   </nav>
 
@@ -952,6 +953,16 @@
         }
       }, { passive: true });
     })();
+  </script>
+
+  <script>
+    if (localStorage.getItem('atlas_token')) {
+      var btn = document.getElementById('navAuthBtn');
+      if (btn) {
+        btn.textContent = '← Back to chat';
+        btn.href = '/chat';
+      }
+    }
   </script>
 
 </body>

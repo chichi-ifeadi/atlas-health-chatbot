@@ -7,7 +7,8 @@
   <title>Profile - Atlas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Playfair+Display:wght@700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Playfair+Display:wght@700;800&display=swap"></noscript>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -34,8 +35,7 @@
 
           <!-- Profile secondary sidebar -->
           <aside class="profile-v2-sidecard">
-            <div class="profile-streak-badge" id="profileStreakBadge">🔥 Streak loading...</div>
-            <div class="profile-avatar" id="profileAvatarInitial">A</div>
+<div class="profile-avatar" id="profileAvatarInitial">A</div>
             <h2 id="profileDisplayName">Atlas User</h2>
             <p id="profileDisplayEmail">you@example.com</p>
             <span class="profile-badge">Active User</span>
@@ -123,7 +123,7 @@
                     <p class="danger-title">Delete Account</p>
                     <p class="danger-desc">Permanently delete all your data from Atlas.</p>
                   </div>
-                  <button type="button" class="ghost-btn danger" disabled>Delete Account</button>
+                  <button type="button" class="ghost-btn danger" id="deleteAccountBtn">Delete Account</button>
                 </div>
                 <p id="logoutAllStatus" class="status"></p>
               </section>
