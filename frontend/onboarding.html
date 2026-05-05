@@ -1,0 +1,251 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Get Started - Atlas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .onboarding-shell {
+      width: min(620px, 100%);
+      margin-inline: auto;
+    }
+
+    .onboarding-card {
+      display: flex;
+      flex-direction: column;
+      gap: 26px;
+    }
+
+    /* Progress indicator */
+    .onboarding-progress {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 6px;
+    }
+
+    .progress-step {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 2px solid var(--border-strong);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--muted);
+      background: transparent;
+      flex-shrink: 0;
+      transition: background 0.25s, border-color 0.25s, color 0.25s;
+    }
+
+    .progress-step.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .progress-step.done {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent-deep);
+    }
+
+    .progress-line {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      transition: background 0.25s;
+    }
+
+    .progress-line.done {
+      background: var(--accent);
+    }
+
+    /* Steps */
+    .onboarding-step {
+      display: none;
+      flex-direction: column;
+      gap: 18px;
+      animation: step-in 0.28s ease both;
+    }
+
+    .onboarding-step.active {
+      display: flex;
+    }
+
+    #step-1.onboarding-step {
+      gap: 24px;
+    }
+
+    @keyframes step-in {
+      from { opacity: 0; transform: translateX(10px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .onboarding-step h1 {
+      margin: 0;
+      font-size: clamp(1.45rem, 2.5vw, 1.75rem);
+      line-height: 1.18;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+
+    .welcome-heading {
+      font-family: 'Manrope', sans-serif;
+    }
+
+    .onboarding-body {
+      margin: 0;
+      font-size: 1rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* Terms */
+    .terms-text {
+      margin: 0;
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.65;
+      padding: 18px 20px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+    }
+
+    .terms-text strong {
+      color: var(--accent-deep);
+    }
+
+    .terms-check-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.5;
+      cursor: pointer;
+    }
+
+    .terms-check-label input[type="checkbox"] {
+      margin-top: 3px;
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Buttons */
+    .onboarding-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: calc(var(--control-height) + 6px);
+      padding: 0 28px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-pill);
+      font-family: 'Manrope', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+      align-self: flex-start;
+    }
+
+    .onboarding-btn:hover:not(:disabled) {
+      background: var(--accent-deep);
+    }
+
+    .onboarding-btn:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+    }
+
+    .onboarding-btn.full {
+      align-self: stretch;
+    }
+
+    .onboarding-card {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      padding: 0;
+    }
+  </style>
+</head>
+<body class="auth-body auth-compact">
+  <a class="back-to-chat-btn" href="/chat">← Back to chat</a>
+  <div class="auth-shell onboarding-shell">
+    <div class="auth-card onboarding-card">
+
+      <!-- Progress -->
+      <div class="onboarding-progress">
+        <div class="progress-step" id="dot-1"><span>1</span></div>
+        <div class="progress-line" id="line-1"></div>
+        <div class="progress-step" id="dot-2"><span>2</span></div>
+        <div class="progress-line" id="line-2"></div>
+        <div class="progress-step" id="dot-3"><span>3</span></div>
+      </div>
+
+      <!-- Step 1: Welcome -->
+      <div class="onboarding-step" id="step-1">
+        <h1 class="welcome-heading">Welcome to Atlas, <span id="userName">there</span>.</h1>
+        <p class="onboarding-body">Atlas is your personal wellness companion that helps you build healthier routines through guided support, daily check-ins, and simple progress insights.</p>
+        <button class="onboarding-btn" id="step1Next" type="button">Get Started</button>
+      </div>
+
+      <!-- Step 2: Features -->
+      <div class="onboarding-step" id="step-2">
+        <h1>Here's what Atlas can do for you.</h1>
+        <div class="hero-cards">
+          <article class="hero-card">
+            <span class="hero-card-index">01</span>
+            <h2>Wellness guidance</h2>
+            <p>Get personalized advice on sleep, stress, energy, nutrition, and daily routines.</p>
+          </article>
+          <article class="hero-card">
+            <span class="hero-card-index">02</span>
+            <h2>Daily check-ins</h2>
+            <p>Log how you feel each day and track patterns in your sleep, mood, and energy over time.</p>
+          </article>
+          <article class="hero-card">
+            <span class="hero-card-index">03</span>
+            <h2>Trend insights</h2>
+            <p>Your dashboard shows weekly patterns so you can understand what affects your wellbeing.</p>
+          </article>
+        </div>
+        <button class="onboarding-btn" id="step2Next" type="button">Next</button>
+      </div>
+
+      <!-- Step 3: Terms -->
+      <div class="onboarding-step" id="step-3">
+        <h1>Before you begin</h1>
+        <p class="terms-text">
+          Atlas is a wellness support tool, not a medical service. It will not diagnose conditions, recommend medications, or replace professional healthcare.<br><br>
+          For any medical concerns, always consult a qualified healthcare professional.<br><br>
+          <strong>In a mental health crisis,</strong> Atlas will direct you to professional support resources including the <strong>988 Suicide and Crisis Lifeline</strong>.
+        </p>
+        <label class="terms-check-label">
+          <input type="checkbox" id="termsCheck" />
+          I understand that Atlas provides wellness guidance only and is not a substitute for professional medical advice.
+        </label>
+        <button class="onboarding-btn full" id="startBtn" type="button" disabled>Start using Atlas</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="onboarding.js"></script>
+</body>
+</html>

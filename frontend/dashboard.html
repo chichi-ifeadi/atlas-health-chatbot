@@ -1,0 +1,147 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atlas Dashboard - Wellness Overview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="back-to-chat-btn" href="/chat">← Back to chat</a>
+  <div class="scene-glow scene-glow-left"></div>
+  <div class="scene-glow scene-glow-right"></div>
+
+  <div class="app-shell">
+    <section class="hero-panel"></section>
+
+    <div class="resize-handle" id="resizeHandle" aria-hidden="true"></div>
+
+    <section class="page-panel">
+      <div class="page-panel-toolbar">
+        <button id="sidebarExpandBtn" class="sidebar-toggle-btn sidebar-expand-btn" type="button" aria-label="Expand sidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <div class="page-panel-body">
+
+        <section class="dashboard-toolbar">
+          <div class="dashboard-toolbar-copy">
+            <p class="dashboard-toolbar-label">Wellness trends</p>
+            <h1 class="dashboard-main-title">Your Week at a Glance</h1>
+            <p class="dashboard-toolbar-text">
+              Based on your recent check-ins, Atlas uses these patterns to personalize your responses.
+            </p>
+          </div>
+          <div class="range-switch">
+            <button data-days="7" class="range-btn active">7 Days</button>
+            <button data-days="14" class="range-btn">14 Days</button>
+            <button data-days="30" class="range-btn">30 Days</button>
+          </div>
+        </section>
+
+        <section class="dashboard-grid">
+          <article class="metric-card large" id="metricSleep">
+            <header>
+              <div class="metric-heading">
+                <p class="metric-title">Sleep quality - trend</p>
+                <p class="metric-caption">avg. score this week</p>
+              </div>
+              <div class="metric-values">
+                <span class="big-value" id="sleepAvg">--</span>
+                <div class="delta" id="sleepDelta">--</div>
+              </div>
+            </header>
+            <div class="mini-bar" id="sleepBars"></div>
+          </article>
+
+          <article class="metric-card large" id="metricMood">
+            <header>
+              <div class="metric-heading">
+                <p class="metric-title">Mood trend</p>
+                <p class="metric-caption">avg. score this week</p>
+              </div>
+              <div class="metric-values">
+                <span class="big-value" id="moodAvg">--</span>
+                <div class="delta" id="moodDelta">--</div>
+              </div>
+            </header>
+            <div class="mini-bar" id="moodBars"></div>
+          </article>
+
+          <article class="metric-card large" id="metricEnergy">
+            <header>
+              <div class="metric-heading">
+                <p class="metric-title">Energy trend</p>
+                <p class="metric-caption">avg. score this week</p>
+              </div>
+              <div class="metric-values">
+                <span class="big-value" id="energyAvg">--</span>
+                <div class="delta" id="energyDelta">--</div>
+              </div>
+            </header>
+            <div class="mini-bar" id="energyBars"></div>
+          </article>
+
+          <article class="metric-card large" id="metricStress">
+            <header>
+              <div class="metric-heading">
+                <p class="metric-title">Stress level</p>
+                <p class="metric-caption">avg. score this week</p>
+              </div>
+              <div class="metric-values">
+                <span class="big-value" id="stressAvg">--</span>
+                <div class="delta" id="stressDelta">--</div>
+              </div>
+            </header>
+            <div class="mini-bar" id="stressBars"></div>
+          </article>
+
+          <article class="metric-card large" id="metricHydration">
+            <header>
+              <div class="metric-heading">
+                <p class="metric-title">Hydration</p>
+                <p class="metric-caption">Average score in the selected range</p>
+              </div>
+              <div class="metric-values">
+                <span class="big-value" id="hydrationAvg">--</span>
+                <div class="delta" id="hydrationDelta">--</div>
+              </div>
+            </header>
+            <div class="mini-bar" id="hydrationBars"></div>
+          </article>
+
+          <article class="metric-card" id="metricToday">
+            <header>
+              <div class="metric-heading">
+                <p class="metric-title">Today's scores</p>
+              </div>
+            </header>
+            <ul class="today-list" id="todayList"></ul>
+          </article>
+
+          <article class="metric-card" id="metricInsights">
+            <header>
+              <div class="metric-heading">
+                <p class="metric-title">Atlas insights</p>
+              </div>
+            </header>
+            <ul class="insights-list" id="insightsList"></ul>
+          </article>
+
+        </section>
+
+      </div>
+    </section>
+  </div>
+
+  <script src="sidebar.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

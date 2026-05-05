@@ -1,0 +1,92 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Check-In - Atlas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="back-to-chat-btn" href="/chat">← Back to chat</a>
+  <div class="scene-glow scene-glow-left"></div>
+  <div class="scene-glow scene-glow-right"></div>
+
+  <div class="app-shell">
+    <section class="hero-panel"></section>
+
+    <div class="resize-handle" id="resizeHandle" aria-hidden="true"></div>
+
+    <section class="page-panel">
+      <div class="page-panel-toolbar">
+        <button id="sidebarExpandBtn" class="sidebar-toggle-btn sidebar-expand-btn" type="button" aria-label="Expand sidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <div class="page-panel-body">
+        <div class="checkin-intro">
+          <p class="eyebrow">Daily wellness check-in</p>
+          <h1>How are you feeling today?</h1>
+          <p class="auth-subtitle">Log your wellness indicators to help Atlas give you more targeted guidance. Takes about 60 seconds. This data also feeds into your dashboard trends.</p>
+        </div>
+
+        <div class="checkin-card">
+          <form id="checkinForm" class="checkin-form">
+            <div class="wellness-section-head">📊 Wellness Indicators</div>
+            <div class="wellness-divider" aria-hidden="true"></div>
+
+            <div class="slider-group" data-label="Sleep Quality">
+              <div class="slider-head"><span>🥱 Sleep Quality</span><span id="sleepValue">5 / 10</span></div>
+              <input type="range" id="sleep" name="sleep" min="0" max="10" value="5" />
+              <div class="slider-scale"><span>Poor</span><span>Okay</span><span>Great</span></div>
+            </div>
+
+            <div class="slider-group" data-label="Mood">
+              <div class="slider-head"><span>😊 Mood</span><span id="moodValue">5 / 10</span></div>
+              <input type="range" id="mood" name="mood" min="0" max="10" value="5" />
+              <div class="slider-scale"><span>Low</span><span>Neutral</span><span>Positive</span></div>
+            </div>
+
+            <div class="slider-group" data-label="Energy">
+              <div class="slider-head"><span>⚡ Energy</span><span id="energyValue">5 / 10</span></div>
+              <input type="range" id="energy" name="energy" min="0" max="10" value="5" />
+              <div class="slider-scale"><span>Drained</span><span>Moderate</span><span>High</span></div>
+            </div>
+
+            <div class="slider-group" data-label="Stress Level">
+              <div class="slider-head"><span>🧠 Stress Level</span><span id="stressValue">5 / 10</span></div>
+              <input type="range" id="stress" name="stress" min="0" max="10" value="5" />
+              <div class="slider-scale"><span>Calm</span><span>Moderate</span><span>High</span></div>
+            </div>
+
+            <div class="slider-group" data-label="Hydration">
+              <div class="slider-head"><span>💧 Hydration</span><span id="hydrationValue">5 / 10</span></div>
+              <input type="range" id="hydration" name="hydration" min="0" max="10" value="5" />
+              <div class="slider-scale"><span>Low</span><span>Decent</span><span>Well hydrated</span></div>
+            </div>
+
+            <label class="input-shell notes-shell" for="notes">
+              <span class="input-label">Notes (optional)</span>
+              <textarea id="notes" name="notes" placeholder="Anything you want Atlas to know? E.g. rough night, big presentation today, skipped lunch." rows="3"></textarea>
+            </label>
+
+            <div class="checkin-actions">
+              <button id="submitCheckin" class="primary-btn" type="submit">Submit check-in</button>
+              <p id="checkinStatus" class="status"></p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="sidebar.js"></script>
+  <script src="checkin.js"></script>
+</body>
+</html>

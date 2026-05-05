@@ -1,0 +1,206 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile - Atlas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="back-to-chat-btn" href="/chat">← Back to chat</a>
+  <div class="scene-glow scene-glow-left"></div>
+  <div class="scene-glow scene-glow-right"></div>
+
+  <div class="app-shell">
+    <section class="hero-panel"></section>
+
+    <div class="resize-handle" id="resizeHandle" aria-hidden="true"></div>
+
+    <section class="page-panel">
+      <div class="page-panel-toolbar">
+        <button id="sidebarExpandBtn" class="sidebar-toggle-btn sidebar-expand-btn" type="button" aria-label="Expand sidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <div class="page-panel-body">
+        <div class="profile-v2-shell">
+
+          <!-- Profile secondary sidebar -->
+          <aside class="profile-v2-sidecard">
+            <div class="profile-streak-badge" id="profileStreakBadge">🔥 Streak loading...</div>
+            <div class="profile-avatar" id="profileAvatarInitial">A</div>
+            <h2 id="profileDisplayName">Atlas User</h2>
+            <p id="profileDisplayEmail">you@example.com</p>
+            <span class="profile-badge">Active User</span>
+
+            <nav class="profile-v2-menu" aria-label="Profile sections">
+              <button type="button" class="menu-item active" data-section="account">Account</button>
+              <button type="button" class="menu-item" data-section="security">Security</button>
+              <button type="button" class="menu-item" data-section="notifications">Notifications</button>
+            </nav>
+
+          </aside>
+
+          <!-- Main content -->
+          <main class="profile-v2-main">
+
+            <!-- Account section -->
+            <section class="profile-v2-panel" id="accountSection">
+              <h1>Account</h1>
+
+              <form id="nameForm" class="profile-v2-form">
+                <label>
+                  <span>Name</span>
+                  <input id="nameInput" type="text" placeholder="Your full name" autocomplete="name" />
+                </label>
+                <div class="profile-v2-actions">
+                  <button class="primary-btn" type="submit">Save Name</button>
+                  <p id="nameStatus" class="status"></p>
+                </div>
+              </form>
+
+              <hr />
+
+              <form id="emailForm" class="profile-v2-form">
+                <label>
+                  <span>Current Email</span>
+                  <input id="currentEmail" type="email" placeholder="Loading..." readonly style="opacity:0.6;cursor:default;" />
+                </label>
+                <label>
+                  <span>New Email</span>
+                  <input id="newEmail" type="email" placeholder="New email address" autocomplete="email" />
+                </label>
+                <div class="profile-v2-actions">
+                  <button class="primary-btn" type="submit">Update Email</button>
+                  <p id="emailStatus" class="status"></p>
+                </div>
+              </form>
+            </section>
+
+            <!-- Security section -->
+            <section class="profile-v2-panel" id="securitySection" style="display:none;">
+              <h1>Security</h1>
+
+              <form id="passwordForm" class="profile-v2-form">
+                <label>
+                  <span>Current Password</span>
+                  <input id="currentPassword" type="password" placeholder="Current password" autocomplete="current-password" />
+                </label>
+                <label>
+                  <span>New Password</span>
+                  <input id="newPassword" type="password" placeholder="New password (min 8 chars)" autocomplete="new-password" />
+                </label>
+                <label>
+                  <span>Confirm New Password</span>
+                  <input id="confirmPassword" type="password" placeholder="Confirm new password" autocomplete="new-password" />
+                </label>
+                <div class="profile-v2-actions">
+                  <button class="primary-btn" type="submit">Update Password</button>
+                  <p id="passwordStatus" class="status"></p>
+                </div>
+              </form>
+
+              <hr />
+
+              <section class="danger-zone">
+                <h2>Danger Zone</h2>
+                <div class="danger-row">
+                  <div>
+                    <p class="danger-title">Log out all sessions</p>
+                    <p class="danger-desc">Invalidate all active tokens and force sign-in on all devices.</p>
+                  </div>
+                  <button id="logoutAllBtn" type="button" class="ghost-btn danger">Log out All</button>
+                </div>
+                <div class="danger-row">
+                  <div>
+                    <p class="danger-title">Delete Account</p>
+                    <p class="danger-desc">Permanently delete all your data from Atlas.</p>
+                  </div>
+                  <button type="button" class="ghost-btn danger" disabled>Delete Account</button>
+                </div>
+                <p id="logoutAllStatus" class="status"></p>
+              </section>
+            </section>
+
+
+            <!-- Notifications section -->
+            <section class="profile-v2-panel" id="notificationsSection" style="display:none;">
+              <h1>Notifications</h1>
+              <p class="section-copy">Choose how often Atlas should reach out. Email and browser notifications are separate delivery channels, and browser notifications only work while Atlas is open and permission is granted.</p>
+
+              <form id="notificationsForm" class="profile-v2-form">
+                <div class="setting-group">
+                  <span class="group-label">Reminder cadence</span>
+                  <label class="check-row">
+                    <input id="dailyReminder" name="notificationCadence" type="radio" value="daily" checked />
+                    <span>Daily check-in reminder</span>
+                  </label>
+                  <label class="check-row">
+                    <input id="weeklySummary" name="notificationCadence" type="radio" value="weekly" />
+                    <span>Weekly summary</span>
+                  </label>
+                  <p class="field-hint">Weekly summaries are sent on Sundays at your chosen time.</p>
+                </div>
+
+                <label>
+                  <span>Reminder Time</span>
+                  <input id="reminderTime" type="time" value="20:00" />
+                </label>
+
+                <label>
+                  <span>Timezone</span>
+                  <select id="reminderTimezone"></select>
+                </label>
+
+                <hr />
+
+                <div class="setting-group">
+                  <span class="group-label">Delivery channels</span>
+                  <label class="check-row">
+                    <input id="pushNotifications" type="checkbox" />
+                    <span>Browser notification</span>
+                  </label>
+                  <label class="check-row">
+                    <input id="emailNotifications" type="checkbox" checked />
+                    <span>Email reminder</span>
+                  </label>
+                  <p class="field-hint">Browser notifications require permission and only work when Atlas is open. Email notifications are sent directly to your inbox.</p>
+                </div>
+
+                <div class="profile-v2-actions">
+                  <button class="primary-btn" type="submit">Save Preferences</button>
+                  <button id="sendTestEmailBtn" class="ghost-btn" type="button">Join Email Notifications</button>
+                  <p id="notificationsStatus" class="status"></p>
+                </div>
+              </form>
+            </section>
+
+          </main>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="sidebar.js"></script>
+  <script src="profile.js"></script>
+  <script>
+    document.querySelectorAll('.profile-v2-menu .menu-item').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.profile-v2-menu .menu-item').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var section = btn.dataset.section;
+        document.getElementById('accountSection').style.display = section === 'account' ? '' : 'none';
+        document.getElementById('securitySection').style.display = section === 'security' ? '' : 'none';
+        document.getElementById('notificationsSection').style.display = section === 'notifications' ? '' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>

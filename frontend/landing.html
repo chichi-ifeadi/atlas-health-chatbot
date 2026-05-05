@@ -1,0 +1,958 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atlas — Your Personal Wellness Companion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base: #f4ede3;
+      --bg-wash: #e7dccb;
+      --text: #2d261e;
+      --muted: #756658;
+      --accent: #c66d45;
+      --accent-deep: #9f4f2f;
+      --accent-soft: #f1d5c1;
+      --sage: #5e705d;
+      --sage-soft: #dbe5d7;
+      --glass-bg: rgba(255, 252, 247, 0.55);
+      --glass-border: rgba(255, 255, 255, 0.45);
+      --glass-shadow: 0 8px 40px rgba(90, 68, 43, 0.14);
+      --glass-strong: rgba(255, 252, 247, 0.72);
+      --radius-card: 24px;
+      --radius-pill: 999px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      min-height: 100dvh;
+      font-family: 'Manrope', 'Segoe UI', sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 10% 0%, rgba(214, 169, 132, 0.5) 0%, transparent 40%),
+        radial-gradient(ellipse at 90% 5%, rgba(111, 137, 111, 0.28) 0%, transparent 35%),
+        radial-gradient(ellipse at 50% 80%, rgba(198, 109, 69, 0.12) 0%, transparent 45%),
+        linear-gradient(160deg, var(--bg-base) 0%, var(--bg-wash) 100%);
+      overflow-x: hidden;
+    }
+
+    /* ── Orb decorations ── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.45;
+    }
+    .orb-1 { width: 520px; height: 520px; background: radial-gradient(circle, rgba(198,109,69,0.35), transparent 70%); top: -140px; left: -100px; }
+    .orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(94,112,93,0.28), transparent 70%); top: 60px; right: -80px; }
+    .orb-3 { width: 560px; height: 560px; background: radial-gradient(circle, rgba(241,213,193,0.4), transparent 70%); bottom: -160px; left: 30%; }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 48px;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 252, 247, 0.88) 0%,
+        rgba(255, 252, 247, 0.62) 55%,
+        rgba(255, 252, 247, 0.45) 100%
+      );
+      backdrop-filter: blur(24px) saturate(165%);
+      -webkit-backdrop-filter: blur(24px) saturate(165%);
+      border-bottom: 1px solid var(--glass-border);
+      box-shadow:
+        0 8px 32px rgba(90, 68, 43, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.75);
+      transform: translateY(0);
+      transition: transform 0.28s ease, box-shadow 0.2s ease;
+      will-change: transform;
+    }
+
+    nav.nav-hidden {
+      transform: translateY(calc(-100% - 6px));
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+    }
+
+    .nav-logo-text {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 2.15rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .nav-actions { display: flex; align-items: center; gap: 12px; }
+
+    .btn-ghost {
+      padding: 9px 22px;
+      border-radius: var(--radius-pill);
+      border: 1.5px solid rgba(159, 79, 47, 0.3);
+      background: transparent;
+      color: var(--accent-deep);
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.18s, border-color 0.18s;
+      display: inline-flex;
+      align-items: center;
+    }
+    .btn-ghost:hover { background: rgba(198,109,69,0.08); border-color: var(--accent); }
+
+    .btn-primary {
+      padding: 10px 24px;
+      border-radius: var(--radius-pill);
+      border: none;
+      background: linear-gradient(135deg, var(--accent) 0%, #d99267 100%);
+      color: #fff;
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      box-shadow: 0 6px 20px rgba(198,109,69,0.32);
+      transition: transform 0.18s, box-shadow 0.18s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(198,109,69,0.4); }
+
+    /* ── Glass card mixin ── */
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+    }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 120px 48px 80px;
+    }
+
+    .hero-inner {
+      max-width: 1160px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      background: rgba(198,109,69,0.1);
+      border: 1px solid rgba(198,109,69,0.2);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+      margin-bottom: 22px;
+    }
+
+    .hero-eyebrow span {
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .hero-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(2.6rem, 4.5vw, 4.2rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 22px;
+    }
+
+    .hero-title em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .hero-sub {
+      font-size: clamp(1rem, 1.4vw, 1.1rem);
+      line-height: 1.7;
+      color: var(--muted);
+      max-width: 480px;
+      margin-bottom: 38px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .hero-cta-primary {
+      padding: 14px 32px;
+      border-radius: var(--radius-pill);
+      background: linear-gradient(135deg, var(--accent) 0%, #d99267 100%);
+      color: #fff;
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 10px 32px rgba(198,109,69,0.36);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .hero-cta-primary:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(198,109,69,0.44); }
+
+    .hero-cta-secondary {
+      padding: 14px 28px;
+      border-radius: var(--radius-pill);
+      background: var(--glass-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1.5px solid var(--glass-border);
+      color: var(--text);
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .hero-cta-secondary:hover { background: rgba(255,252,247,0.8); }
+
+    /* ── Hero visual ── */
+    .hero-visual {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hero-phone-mock {
+      position: relative;
+      width: 340px;
+    }
+
+    .mock-card {
+      border-radius: 28px;
+      padding: 28px;
+      background: var(--glass-strong);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255,255,255,0.6);
+      box-shadow: 0 24px 80px rgba(90,68,43,0.18), inset 0 1px 0 rgba(255,255,255,0.7);
+    }
+
+    .mock-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .mock-avatar {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent) 0%, #d99267 100%);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .mock-avatar svg { color: #fff; }
+
+    .mock-header-text h4 { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+    .mock-header-text p { font-size: 0.72rem; color: var(--muted); }
+
+    .mock-bubble {
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      margin-bottom: 10px;
+    }
+
+    .mock-bubble.assistant {
+      background: rgba(255,252,247,0.9);
+      border: 1px solid rgba(255,255,255,0.5);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+    }
+
+    .mock-bubble.user {
+      background: linear-gradient(135deg, var(--accent) 0%, #d99267 100%);
+      color: #fff;
+      margin-left: auto;
+      max-width: 85%;
+      border-bottom-right-radius: 4px;
+    }
+
+    .mock-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      background: rgba(255,252,247,0.8);
+      border: 1px solid rgba(255,255,255,0.5);
+      border-radius: var(--radius-pill);
+      padding: 8px 10px 8px 16px;
+    }
+
+    .mock-input-row span { font-size: 0.78rem; color: var(--muted); flex: 1; }
+
+    .mock-send {
+      width: 30px; height: 30px;
+      background: linear-gradient(135deg, var(--accent) 0%, #d99267 100%);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .mock-send svg { color: #fff; }
+
+    /* Floating stat chips */
+    .stat-chip {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 14px;
+      background: rgba(255,252,247,0.78);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.6);
+      box-shadow: 0 8px 28px rgba(90,68,43,0.12);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .stat-chip-icon { font-size: 1rem; line-height: 1; }
+    .stat-chip-label { font-size: 0.68rem; font-weight: 500; color: var(--muted); display: block; }
+
+    .chip-sleep { top: 14%; right: -60px; }
+    .chip-checkin { bottom: 18%; left: -56px; }
+    .chip-streak { top: 52%; right: -70px; }
+
+    /* ── Section base ── */
+    section {
+      position: relative;
+      z-index: 1;
+    }
+
+    .section-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 48px;
+    }
+
+    .section-eyebrow {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(2rem, 3vw, 2.8rem);
+      font-weight: 800;
+      line-height: 1.18;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    .section-sub {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: var(--muted);
+      max-width: 540px;
+    }
+
+    /* ── Features ── */
+    .features {
+      padding: 100px 0;
+    }
+
+    .features-head {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .features-head .section-sub { margin: 0 auto; }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      padding: 32px 28px;
+      border-radius: var(--radius-card);
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+      transition: transform 0.22s, box-shadow 0.22s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 56px rgba(90,68,43,0.18);
+    }
+
+    .feature-icon {
+      width: 52px; height: 52px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .feature-icon.amber { background: linear-gradient(135deg, rgba(198,109,69,0.15), rgba(217,146,103,0.12)); }
+    .feature-icon.sage  { background: linear-gradient(135deg, rgba(94,112,93,0.15), rgba(94,112,93,0.08)); }
+    .feature-icon.warm  { background: linear-gradient(135deg, rgba(241,213,193,0.5), rgba(244,237,227,0.4)); }
+
+    .feature-icon svg { width: 26px; height: 26px; }
+    .feature-icon.amber svg { color: var(--accent); }
+    .feature-icon.sage  svg { color: var(--sage); }
+    .feature-icon.warm  svg { color: var(--accent-deep); }
+
+    .feature-card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+
+    .feature-card p {
+      font-size: 0.88rem;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+
+    .feature-tag {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 4px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .feature-tag.amber { background: rgba(198,109,69,0.1); color: var(--accent-deep); }
+    .feature-tag.sage  { background: rgba(94,112,93,0.1);  color: var(--sage); }
+    .feature-tag.warm  { background: rgba(159,79,47,0.08); color: var(--accent-deep); }
+
+    /* ── How it works ── */
+    .how-it-works {
+      padding: 100px 0;
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      margin-top: 56px;
+    }
+
+    .step {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .step-num {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent) 0%, #d99267 100%);
+      color: #fff;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .step p {
+      font-size: 0.88rem;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+
+    .step-connector {
+      display: none;
+    }
+
+    /* ── About ── */
+    .about {
+      padding: 100px 0;
+    }
+
+    .about-inner {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 40px;
+      align-items: center;
+      justify-items: center;
+    }
+
+    .about-card {
+      max-width: 560px;
+      width: 100%;
+      padding: 44px 40px;
+      border-radius: var(--radius-card);
+      background: var(--glass-strong);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.6);
+      box-shadow: 0 16px 64px rgba(90,68,43,0.16), inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+
+    .about-avatar {
+      width: 64px; height: 64px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--sage) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .about-avatar svg { color: #fff; width: 30px; height: 30px; }
+
+    .about-card h3 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .about-card .role {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 18px;
+    }
+
+    .about-card p {
+      font-size: 0.92rem;
+      line-height: 1.75;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .about-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .about-tag {
+      padding: 5px 14px;
+      border-radius: var(--radius-pill);
+      background: rgba(198,109,69,0.1);
+      border: 1px solid rgba(198,109,69,0.18);
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent-deep);
+    }
+
+    /* ── CTA band ── */
+    .cta-band {
+      padding: 100px 0 36px;
+    }
+
+    .cta-card {
+      border-radius: 32px;
+      padding: 72px 64px;
+      background: linear-gradient(135deg, rgba(198,109,69,0.12) 0%, rgba(94,112,93,0.08) 100%);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.55);
+      box-shadow: 0 24px 80px rgba(90,68,43,0.12);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% -10%, rgba(198,109,69,0.18) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .cta-card h2 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(2rem, 3.2vw, 3rem);
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .cta-card p {
+      font-size: 1rem;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 36px;
+      position: relative;
+    }
+
+    .cta-card-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      position: relative;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 1024px) {
+      nav { padding: 16px 28px; }
+      .hero { padding: 110px 28px 72px; }
+      .hero-inner { grid-template-columns: 1fr; gap: 52px; }
+      .hero-visual { order: -1; }
+      .hero-phone-mock { width: 300px; }
+      .chip-sleep, .chip-checkin, .chip-streak { display: none; }
+      .hero-title { font-size: clamp(2.4rem, 5vw, 3.2rem); }
+      .section-inner { padding: 0 28px; }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .cta-card { padding: 52px 36px; }
+      .cta-band { padding: 80px 0 28px; }
+    }
+
+    @media (max-width: 640px) {
+      nav { padding: 14px 20px; }
+      .nav-logo-text { font-size: 1.75rem; }
+      .hero { padding: 100px 20px 60px; }
+      .hero-ctas { flex-direction: column; align-items: flex-start; }
+      .section-inner { padding: 0 20px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .cta-card { padding: 44px 24px; }
+      .cta-card-actions { flex-direction: column; }
+      .hero-phone-mock { width: 260px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background orbs -->
+  <div class="orb orb-1" aria-hidden="true"></div>
+  <div class="orb orb-2" aria-hidden="true"></div>
+  <div class="orb orb-3" aria-hidden="true"></div>
+
+  <!-- ── Navigation ── -->
+  <nav aria-label="Main navigation">
+    <a class="nav-logo" href="/landing" aria-label="Atlas home">
+      <span class="nav-logo-text">Atlas</span>
+    </a>
+    <div class="nav-actions">
+      <a class="btn-ghost" href="/signin">Sign in</a>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <section class="hero" aria-labelledby="hero-heading">
+    <div class="hero-inner">
+      <div class="hero-content">
+        <h1 class="hero-title" id="hero-heading">
+          Your personal guide to <em>feeling better</em>, every day.
+        </h1>
+        <p class="hero-sub">
+          Atlas is an AI-powered wellness assistant that helps you track sleep, stress, energy, and mood — then gives you personalised guidance to build healthier habits that actually stick.
+        </p>
+        <div class="hero-ctas">
+          <a class="hero-cta-primary" href="/signin">
+            Start your journey
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+          <a class="hero-cta-secondary" href="#features">See what Atlas does</a>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-hidden="true">
+        <div class="hero-phone-mock">
+          <div class="mock-card">
+            <div class="mock-header">
+              <div class="mock-avatar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8 2 4 6 4 10c0 5 8 12 8 12s8-7 8-12c0-4-4-8-8-8z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              </div>
+              <div class="mock-header-text">
+                <h4>Atlas</h4>
+              </div>
+            </div>
+            <div class="mock-bubble assistant">
+              Good morning! Your sleep score is looking great today — 8.2 hours. Want a morning routine to keep the momentum going?
+            </div>
+            <div class="mock-bubble user">Yes, give me a quick 10-min routine!</div>
+            <div class="mock-bubble assistant">
+              Perfect. Start with 2 min deep breathing, then 5 min light stretching, and end with a glass of water before breakfast.
+            </div>
+            <div class="mock-input-row">
+              <span>Ask about sleep, stress, energy…</span>
+              <div class="mock-send">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="stat-chip chip-sleep">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c66d45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <div>
+              <strong>8.2 hrs</strong>
+              <span class="stat-chip-label">Sleep last night</span>
+            </div>
+          </div>
+
+          <div class="stat-chip chip-streak">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c66d45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            <div>
+              <strong>12 days</strong>
+              <span class="stat-chip-label">Check-in streak</span>
+            </div>
+          </div>
+
+          <div class="stat-chip chip-checkin">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5e705d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <div>
+              <strong>Check-in done</strong>
+              <span class="stat-chip-label">Mood: 8 / 10</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Features ── -->
+  <section class="features" id="features" aria-labelledby="features-heading">
+    <div class="section-inner">
+      <div class="features-head">
+        <p class="section-eyebrow">What Atlas does</p>
+        <h2 class="section-title" id="features-heading">Everything you need to feel your best</h2>
+        <p class="section-sub">Three tools that work together — chat, track, and understand your wellness over time.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon amber" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <h3>AI Wellness Chat</h3>
+          <p>Ask Atlas anything about sleep, stress, energy, focus, or nutrition. Get personalised, evidence-based guidance in a conversational format — not generic advice.</p>
+          <span class="feature-tag amber">Core feature</span>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon sage" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+          </div>
+          <h3>Daily Check-In</h3>
+          <p>Log your sleep quality, mood, energy, stress, and hydration in under 60 seconds each day. Atlas uses your check-ins to tailor its guidance and catch patterns early.</p>
+          <span class="feature-tag sage">Daily habit</span>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon warm" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+            </svg>
+          </div>
+          <h3>Wellness Dashboard</h3>
+          <p>Visualise your weekly trends across all five wellness dimensions. See how your sleep affects your mood, or how stress follows energy — insights no journal gives you.</p>
+          <span class="feature-tag warm">Insights</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How it works ── -->
+  <section class="how-it-works" aria-labelledby="how-heading">
+    <div class="section-inner">
+      <div>
+        <p class="section-eyebrow">How it works</p>
+        <h2 class="section-title" id="how-heading">Three steps to a healthier you</h2>
+      </div>
+      <div class="steps-grid">
+        <div class="step">
+          <div class="step-num" aria-hidden="true">1</div>
+          <h3>Create your account</h3>
+          <p>Sign up in seconds. Atlas keeps your data private and secure — your check-ins and conversations are yours alone.</p>
+        </div>
+        <div class="step">
+          <div class="step-num" aria-hidden="true">2</div>
+          <h3>Complete your daily check-in</h3>
+          <p>Each morning or evening, spend 60 seconds logging how you feel. Atlas remembers your history and adjusts its guidance accordingly.</p>
+        </div>
+        <div class="step">
+          <div class="step-num" aria-hidden="true">3</div>
+          <h3>Chat, track, and improve</h3>
+          <p>Ask Atlas for advice anytime. Review your trends on the dashboard. Watch your wellness scores climb as your habits improve.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── About ── -->
+  <section class="about" id="about" aria-labelledby="about-heading">
+    <div class="section-inner">
+      <div class="about-inner">
+        <div class="about-card glass">
+          <div class="about-avatar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+            </svg>
+          </div>
+          <h3 id="about-heading">Created by the Atlas Wellness Team</h3>
+          <p class="role">Capstone Project - Texas Tech University</p>
+          <p>Atlas was designed and developed as a Texas Tech capstone project by a student team, combining our shared interest in human health, AI, and modern web technology.</p>
+          <div class="about-tags">
+            <span class="about-tag">Full-Stack</span>
+            <span class="about-tag">AI &amp; ML</span>
+            <span class="about-tag">UX Design</span>
+            <span class="about-tag">Health Tech</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA band ── -->
+  <section class="cta-band" aria-labelledby="cta-heading">
+    <div class="section-inner">
+      <div class="cta-card glass">
+        <h2 id="cta-heading">Ready to start feeling better?</h2>
+        <p>Join Atlas today. Free to use, takes 2 minutes to set up, and your first conversation is waiting.</p>
+        <div class="cta-card-actions">
+          <a class="hero-cta-primary" href="/signup">
+            Get started
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    (function () {
+      if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+      }
+      function toTop() {
+        window.scrollTo(0, 0);
+      }
+      toTop();
+      document.addEventListener('DOMContentLoaded', toTop);
+      window.addEventListener('load', function () {
+        toTop();
+        requestAnimationFrame(toTop);
+        setTimeout(toTop, 0);
+      });
+
+      const nav = document.querySelector('nav');
+      if (!nav) return;
+
+      let lastScrollY = window.scrollY || 0;
+      let ticking = false;
+      const TOP_THRESHOLD = 18;
+      const DELTA = 6;
+
+      function updateNavOnScroll() {
+        const currentY = window.scrollY || 0;
+        const diff = currentY - lastScrollY;
+
+        if (currentY <= TOP_THRESHOLD) {
+          nav.classList.remove('nav-hidden');
+        } else if (diff > DELTA) {
+          nav.classList.add('nav-hidden');
+        } else if (diff < -DELTA) {
+          nav.classList.remove('nav-hidden');
+        }
+
+        lastScrollY = currentY;
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', function () {
+        if (!ticking) {
+          requestAnimationFrame(updateNavOnScroll);
+          ticking = true;
+        }
+      }, { passive: true });
+    })();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment variables
+.env
+.env.*
+_env
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# Build
+/dist
+/build
+
+# Misc
+*.swp
+*.swo
+
+# Dev/tooling — not part of the deployable app
+remotion/
+.claude/

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atlas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="scene-glow scene-glow-left"></div>
+  <div class="scene-glow scene-glow-right"></div>
+
+  <div class="app-shell">
+    <section class="hero-panel">
+      <div class="sidebar-top-row">
+        <span id="topbarUserName" class="topbar-user-chip"></span>
+        <button id="sidebarToggle" class="sidebar-toggle-btn" type="button" aria-label="Collapse sidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <div class="sidebar-hero">
+        <p class="chat-heading-kicker">Daily Wellness Companion</p>
+        <h1 id="appTitle" class="chat-heading-title">Atlas</h1>
+        <p class="chat-heading-sub">Your wellness companion for better routines, lower stress, and sustainable healthy habits.</p>
+      </div>
+
+      <div class="sidebar-settings">
+        <p class="prev-sessions-label">Quick Access</p>
+        <div class="settings-list">
+          <button class="settings-item" id="newChatBtn" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            New chat
+          </button>
+          <a class="settings-item" href="/checkin">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Daily Check-in
+          </a>
+          <a class="settings-item" href="/dashboard">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+          </a>
+          <a class="settings-item" href="/history">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            History
+          </a>
+        </div>
+      </div>
+
+      <div class="prev-sessions">
+        <p class="prev-sessions-label">Previous conversations</p>
+        <div id="sessionList" class="session-list">
+          <p class="session-empty">Your past conversations will appear here.</p>
+        </div>
+      </div>
+
+      <div class="sidebar-settings">
+        <p class="prev-sessions-label">Settings</p>
+        <div class="settings-list">
+          <a class="settings-item" href="/profile">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            Profile
+          </a>
+          <button class="settings-item" id="sidebarSignOut" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign out
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div class="resize-handle" id="resizeHandle" aria-hidden="true"></div>
+
+    <section class="chat-panel">
+      <div class="chat-panel-toolbar">
+        <button id="sidebarExpandBtn" class="sidebar-toggle-btn sidebar-expand-btn" type="button" aria-label="Expand sidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+        <a class="toolbar-home-link" href="/landing">Return to home page</a>
+      </div>
+      <main class="chat-window" id="chatWindow" aria-live="polite"></main>
+
+      <section class="suggestions-wrap" aria-label="Quick prompts">
+        <p id="suggestionsLabel" class="suggestions-label">Quick starts</p>
+        <div class="suggestions" id="suggestions"></div>
+      </section>
+
+      <form id="chatForm" class="chat-form">
+        <label class="input-shell" for="chatInput">
+          <span class="input-label">Message Atlas</span>
+          <input id="chatInput" type="text" placeholder="Ask about sleep, stress, energy, focus, or healthy routines..." autocomplete="off" required />
+        </label>
+        <label class="style-shell" for="responseStyle">
+          <span class="input-label">Style</span>
+          <select id="responseStyle" aria-label="Response style">
+            <option value="short">Short</option>
+            <option value="balanced" selected>Balanced</option>
+            <option value="detailed">Detailed</option>
+          </select>
+        </label>
+        <button id="sendBtn" type="submit">Send</button>
+      </form>
+      <p id="statusText" class="status"></p>
+
+      <footer class="footer">
+        <p id="footerText">Atlas provides wellness support only and does not offer medical diagnoses or treatments.</p>
+      </footer>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+﻿(function initSharedSidebar() {
+  const SIDEBAR_HTML = `
+    <div class="sidebar-top-row">
+      <button id="sidebarToggle" class="sidebar-toggle-btn" type="button" aria-label="Collapse sidebar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+    </div>
+
+    <div class="sidebar-hero">
+      <p class="chat-heading-kicker">Daily Wellness Companion</p>
+      <h1 class="chat-heading-title">Atlas</h1>
+      <p class="chat-heading-sub">Your wellness companion for better routines, lower stress, and sustainable healthy habits.</p>
+    </div>
+
+    <div class="sidebar-settings">
+      <p class="prev-sessions-label">Quick Access</p>
+      <div class="settings-list">
+        <a class="settings-item" href="/chat">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          New chat
+        </a>
+        <a class="settings-item" href="/checkin">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Daily Check-in
+        </a>
+        <a class="settings-item" href="/dashboard">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a>
+        <a class="settings-item" href="/history">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          History
+        </a>
+      </div>
+    </div>
+
+    <div class="sidebar-settings">
+      <p class="prev-sessions-label">Settings</p>
+      <div class="settings-list">
+        <a class="settings-item" href="/profile">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          Profile
+        </a>
+        <button class="settings-item" id="sidebarSignOut" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign out
+        </button>
+      </div>
+    </div>
+  `;
+
+  const heroPanel = document.querySelector('.hero-panel');
+  if (!heroPanel) return;
+  heroPanel.innerHTML = SIDEBAR_HTML;
+
+  // Mark the active nav item
+  const path = window.location.pathname;
+  heroPanel.querySelectorAll('a.settings-item').forEach(function(el) {
+    const href = el.getAttribute('href') || '';
+    if (path === href || path.endsWith(href.replace(/^\//, ''))) {
+      el.classList.add('active');
+    }
+  });
+
+  const shell = document.querySelector('.app-shell');
+  const toggle = document.getElementById('sidebarToggle');
+  const expandBtn = document.getElementById('sidebarExpandBtn');
+  const MIN_W = 180;
+  const MAX_W = 560;
+
+  // Restore saved width
+  const savedW = parseInt(localStorage.getItem('atlas_sidebar_width'), 10);
+  if (savedW >= MIN_W && savedW <= MAX_W) {
+    heroPanel.style.flexBasis = savedW + 'px';
+    heroPanel.style.width = savedW + 'px';
+  }
+
+  // Restore collapsed state
+  if (localStorage.getItem('atlas_sidebar_collapsed') === 'true') {
+    shell && shell.classList.add('sidebar-collapsed');
+  }
+
+  function toggleSidebar() {
+    if (!shell) return;
+    var collapsed = shell.classList.toggle('sidebar-collapsed');
+    localStorage.setItem('atlas_sidebar_collapsed', String(collapsed));
+  }
+
+  if (toggle) toggle.addEventListener('click', toggleSidebar);
+  if (expandBtn) expandBtn.addEventListener('click', toggleSidebar);
+
+  // Drag-to-resize
+  var handle = document.getElementById('resizeHandle');
+  if (handle) {
+    handle.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      var startX = e.clientX;
+      var startW = heroPanel.getBoundingClientRect().width;
+      handle.classList.add('is-dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      heroPanel.classList.add('no-transition');
+
+      function onMove(e) {
+        var w = Math.min(MAX_W, Math.max(MIN_W, startW + e.clientX - startX));
+        heroPanel.style.flexBasis = w + 'px';
+        heroPanel.style.width = w + 'px';
+      }
+
+      function onUp() {
+        heroPanel.classList.remove('no-transition');
+        handle.classList.remove('is-dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        localStorage.setItem('atlas_sidebar_width', parseInt(heroPanel.style.width, 10));
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  // Sign out
+  function signOut() {
+    ['atlas_token', 'atlas_user_email', 'atlas_user_role', 'atlas_user_id', 'atlas_user_name']
+      .forEach(function(k) { localStorage.removeItem(k); });
+    window.location.href = '/signin';
+  }
+
+  var signOutBtn = document.getElementById('sidebarSignOut');
+  if (signOutBtn) signOutBtn.addEventListener('click', signOut);
+}());
