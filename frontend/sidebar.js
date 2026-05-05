@@ -1,6 +1,7 @@
 ﻿(function initSharedSidebar() {
   const SIDEBAR_HTML = `
     <div class="sidebar-top-row">
+      <span id="topbarUserName" class="topbar-user-chip"></span>
       <button id="sidebarToggle" class="sidebar-toggle-btn" type="button" aria-label="Collapse sidebar">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6"></polyline>
@@ -36,6 +37,13 @@
       </div>
     </div>
 
+    <div class="prev-sessions">
+      <p class="prev-sessions-label">Previous conversations</p>
+      <div id="sessionList" class="session-list">
+        <p class="session-empty">Your past conversations will appear here.</p>
+      </div>
+    </div>
+
     <div class="sidebar-settings">
       <p class="prev-sessions-label">Settings</p>
       <div class="settings-list">
@@ -54,6 +62,14 @@
   const heroPanel = document.querySelector('.hero-panel');
   if (!heroPanel) return;
   heroPanel.innerHTML = SIDEBAR_HTML;
+
+  // Populate username chip
+  var nameEl = document.getElementById('topbarUserName');
+  if (nameEl) {
+    var rawName = localStorage.getItem('atlas_user_name') || localStorage.getItem('atlas_user_email') || '';
+    var displayName = rawName.includes('@') ? rawName.split('@')[0] : rawName;
+    nameEl.textContent = displayName ? displayName.charAt(0).toUpperCase() + displayName.slice(1) : '';
+  }
 
   // Mark the active nav item
   const path = window.location.pathname;
@@ -133,4 +149,45 @@
 
   var signOutBtn = document.getElementById('sidebarSignOut');
   if (signOutBtn) signOutBtn.addEventListener('click', signOut);
+
+  // Load previous conversations (skip on chat page — app.js handles it there)
+  var isChatPage = window.location.pathname === '/chat' || window.location.pathname.endsWith('/chat.html');
+  if (!isChatPage) {
+    var sessionList = document.getElementById('sessionList');
+    if (sessionList) {
+      var token = localStorage.getItem('atlas_token');
+      if (token) {
+        fetch('/api/sessions', { headers: { 'Authorization': 'Bearer ' + token } })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            var sessions = Array.isArray(data.sessions) ? data.sessions : [];
+            if (!sessions.length) return;
+            sessionList.innerHTML = '';
+            var now = new Date();
+            sessions.forEach(function(session) {
+              var d = new Date(session.created_at);
+              var dateStr = d.toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric',
+                ...(d.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}),
+              });
+              var label = session.title || (session.first_message
+                ? (session.first_message.length > 58 ? session.first_message.slice(0, 58) + '…' : session.first_message)
+                : 'Untitled conversation');
+              var btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'session-item';
+              btn.innerHTML = '<span class="session-date">' + dateStr + '</span><span class="session-preview">' + label + '</span>';
+              btn.addEventListener('click', function() {
+                window.location.href = '/chat?session=' + encodeURIComponent(session.id);
+              });
+              var row = document.createElement('div');
+              row.className = 'session-row';
+              row.appendChild(btn);
+              sessionList.appendChild(row);
+            });
+          })
+          .catch(function() {});
+      }
+    }
+  }
 }());
